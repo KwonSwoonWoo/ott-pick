@@ -757,23 +757,20 @@ async function openCurationPanel(rec, rankIndex) {
 [비슷한 작품 1개] 제목 + 한 줄 이유`;
 
   try {
-    const res = await fetch('https://api.openai.com/v1/responses', {
+    const res = await fetch('/api/review', {
       method: 'POST',
-      headers: {'Authorization':'Bearer '+apiKey.trim(),'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'gpt-4o',
-        tools:[{type:'web_search_preview'}],
-        input:prompt,
-        max_output_tokens:650
+        title: rec.title, year: rec.year, type: rec.type,
+        genre: rec.genre, hook: rec.hook,
+        moods, contexts, times, spoiler: false
       })
     });
     if (!res.ok) {
       const e=await res.json().catch(()=>({}));
-      throw new Error((e.error&&e.error.message)||res.status);
+      throw new Error(e.error || res.status);
     }
-    const result = await res.json();
-    const msg = (result.output||[]).find(o=>o.type==='message');
-    const text = msg?.content?.find(c=>c.type==='output_text')?.text||'';
+    const { text } = await res.json();
 
     const paras = text.split(/\n\n+/).filter(p=>p.trim());
     document.getElementById('cp-review-text').innerHTML =
@@ -917,15 +914,17 @@ async function loadSpoilerReview() {
 조건: 한국어 존댓말, URL 금지, 마크다운 금지, 단락 사이 빈 줄`;
 
   try {
-    const res = await fetch('https://api.openai.com/v1/responses', {
+    const res = await fetch('/api/review', {
       method: 'POST',
-      headers: {'Authorization':'Bearer '+apiKey.trim(),'Content-Type':'application/json'},
-      body: JSON.stringify({model:'gpt-4o-mini',tools:[{type:'web_search_preview'}],input:prompt,max_output_tokens:600})
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        title: rec.title, year: rec.year, type: rec.type,
+        genre: rec.genre, hook: rec.hook,
+        moods: [], contexts: [], times: [], spoiler: true
+      })
     });
-    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error((e.error&&e.error.message)||res.status); }
-    const result = await res.json();
-    const msg = (result.output||[]).find(o=>o.type==='message');
-    const text = msg?.content?.find(c=>c.type==='output_text')?.text||'';
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error || res.status); }
+    const { text } = await res.json();
     const paras = text.split(/\n\n+/).filter(p=>p.trim());
     spoilerText.innerHTML = paras.map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
   } catch(err) {
