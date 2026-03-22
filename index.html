@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTT픽 — 오늘 뭐 볼까?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --border: #222;
+  --text: #f0ece4;
+  --muted: #666;
+  --accent: #e8c56d;
+  --accent2: #c49a3c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+}
+
+/* ── 배경 노이즈 효과 ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 1.2rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10,10,10,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.logo {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.logo span { color: var(--text); font-weight: 300; font-size: 0.9rem; }
+
+.header-btn {
+  background: var(--accent);
+  color: #0a0a0a;
+  border: none;
+  padding: 0.5rem 1.4rem;
+  border-radius: 2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.header-btn:hover { opacity: 0.85; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 2rem 4rem;
+  position: relative;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(232,197,109,0.08) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.2s;
+}
+
+.hero-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.4s;
+}
+
+.hero-title em {
+  font-style: normal;
+  color: var(--accent);
+  position: relative;
+}
+
+.hero-title em::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 480px;
+  margin: 0 auto 2.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.6s;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.8s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0a0a0a;
+  border: none;
+  padding: 0.9rem 2.2rem;
+  border-radius: 3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 0 30px rgba(232,197,109,0.2);
+}
+.btn-primary:hover { opacity: 0.85; transform: translateY(-2px); box-shadow: 0 8px 40px rgba(232,197,109,0.3); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #333;
+  padding: 0.9rem 2.2rem;
+  border-radius: 3rem;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: #555; color: #ccc; }
+
+.hero-scroll {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #333;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  animation: bounce 2s ease infinite;
+}
+
+.hero-scroll::after {
+  content: '';
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, #333, transparent);
+}
+
+/* ── OTT 배지 ── */
+.ott-badges {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.7s;
+}
+
+.ott-badge {
+  font-size: 0.72rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 2rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.ott-badge.netflix { background: rgba(229,9,20,0.15); color: #ff4d57; border: 1px solid rgba(229,9,20,0.3); }
+.ott-badge.tving   { background: rgba(255,21,60,0.15); color: #ff6b7a; border: 1px solid rgba(255,21,60,0.3); }
+.ott-badge.wavve   { background: rgba(0,117,255,0.15); color: #4d9fff; border: 1px solid rgba(0,117,255,0.3); }
+.ott-badge.watcha  { background: rgba(155,89,182,0.15); color: #c39bd3; border: 1px solid rgba(155,89,182,0.3); }
+
+/* ── FEATURES ── */
+.features {
+  padding: 7rem 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4rem;
+  line-height: 1.3;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  transition: border-color 0.3s, transform 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.feature-card:hover { border-color: #333; transform: translateY(-4px); }
+.feature-card:hover::before { opacity: 1; }
+
+.feature-icon {
+  font-size: 2.2rem;
+  margin-bottom: 1.2rem;
+  display: block;
+}
+
+.feature-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.7rem;
+  color: var(--text);
+}
+
+.feature-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ── 회원/비회원 비교 ── */
+.compare {
+  padding: 7rem 2rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.compare-card {
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid var(--border);
+}
+
+.compare-card.free {
+  background: #111;
+}
+
+.compare-card.member { transition: transform 0.2s, box-shadow 0.2s;
+  background: linear-gradient(135deg, #1a1608, #1c1a0e);
+  border-color: rgba(232,197,109,0.3);
+  position: relative;
+}
+
+.compare-card.member::before {
+  content: '✦ 추천';
+  position: absolute;
+  top: -1px; right: 1.5rem;
+  background: var(--accent);
+  color: #0a0a0a;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  border-radius: 0 0 6px 6px;
+}
+
+.compare-tier {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.compare-tier.gold { color: var(--accent); }
+
+.compare-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.compare-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.compare-list li {
+  font-size: 0.85rem;
+  color: #aaa;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  line-height: 1.5;
+}
+
+.compare-list li::before {
+  content: '✓';
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.compare-list li.disabled { color: #444; }
+.compare-list li.disabled::before { content: '✕'; color: #333; }
+
+/* ── CTA 섹션 ── */
+.cta-section {
+  padding: 8rem 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.cta-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(232,197,109,0.06) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cta-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.cta-sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-bottom: 2.5rem;
+  line-height: 1.8;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #444;
+  font-size: 0.75rem;
+}
+
+footer a { color: #555; text-decoration: none; }
+footer a:hover { color: #888; }
+
+.tmdb-attr {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tmdb-attr img { height: 16px; opacity: 0.4; }
+
+/* ── 애니메이션 ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(6px); }
+}
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+  header { padding: 1rem 1.5rem; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .feature-grid { grid-template-columns: 1fr; }
+  footer { flex-direction: column; text-align: center; }
+}
+.compare-card.member:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(232,197,109,0.15); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">OTT픽 <span>/ 오늘 뭐 볼까?</span></div>
+  <a class="header-btn" href="./login">회원가입 / 로그인</a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">AI 기반 OTT 콘텐츠 큐레이션</div>
+  <h1 class="hero-title">
+    오늘 기분에 딱 맞는<br>
+    <em>작품</em>을 골라드려요
+  </h1>
+  <p class="hero-sub">
+    넷플릭스, 티빙, 웨이브, 왓챠를 한 번에.<br>
+    "오늘 감동받고 싶어", "손 떨리는 거 보고 싶어"<br>
+    말만 하면 AI가 알아서 찾아드려요.
+  </p>
+  <div class="ott-badges">
+    <span class="ott-badge netflix">넷플릭스</span>
+    <span class="ott-badge tving">티빙</span>
+    <span class="ott-badge wavve">웨이브</span>
+    <span class="ott-badge watcha">왓챠</span>
+  </div>
+  <div class="hero-cta">
+    <a class="btn-primary" href="./app">무료로 추천받기 →</a>
+    <a class="btn-secondary" href="#features">더 알아보기</a>
+  </div>
+  <div class="hero-scroll">scroll</div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label">주요 기능</div>
+  <h2 class="section-title">왜 OTT픽인가요?</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <div class="feature-title">MBTI 기반 추천</div>
+      <div class="feature-desc">
+        내 MBTI가 좋아할 작품, 알고리즘보다 정확하게 찾아드려요.
+      </div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📺</span>
+      <div class="feature-title">4개 OTT 통합 검색</div>
+      <div class="feature-desc">
+        넷플릭스, 티빙, 웨이브, 왓챠를 한 번에 검색해요.
+        어디서 볼 수 있는지 바로 알려드리고 바로가기 버튼도 제공해요.
+      </div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">✍️</span>
+      <div class="feature-title">AI 큐레이터 감상문</div>
+      <div class="feature-desc">
+        단순 줄거리가 아닌, 실제 시청자 반응과 화제 포인트를 담은
+        블로그 스타일의 감상문을 AI가 실시간으로 작성해드려요.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 비회원/회원 비교 -->
+<section class="compare" id="compare">
+  <div class="compare-inner">
+    <div class="section-label">요금제 비교</div>
+    <h2 class="section-title">무료로도 충분해요.<br>더 원하면 업그레이드하세요.</h2>
+    <div class="compare-grid">
+      <div class="compare-card free">
+        <div class="compare-tier">무료</div>
+        <div class="compare-name">비회원</div>
+        <ul class="compare-list">
+          <li>TMDB 인기작 기반 추천 5개</li>
+          <li>4개 OTT 통합 검색</li>
+          <li>포스터 · 장르 · OTT 정보</li>
+          <li>OTT 바로가기 버튼</li>
+          <li class="disabled">AI 맞춤 추천</li>
+          <li class="disabled">AI 큐레이터 감상문</li>
+          <li class="disabled">스포일러 분석</li>
+        </ul>
+      </div>
+      <div class="compare-card member" onclick="location.href='./login'" style="cursor:pointer;">
+        <div class="compare-tier gold">유료 구독</div>
+        <div class="compare-name">회원</div>
+        <ul class="compare-list">
+          <li>TMDB 인기작 기반 추천 5개</li>
+          <li>4개 OTT 통합 검색</li>
+          <li>포스터 · 장르 · OTT 정보</li>
+          <li>OTT 바로가기 버튼</li>
+          <li>AI 맞춤 추천 (취향 분석)</li>
+          <li>AI 큐레이터 감상문</li>
+          <li>스포일러 분석</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <h2 class="cta-title">오늘 저녁,<br>뭐 볼지 고민하지 마세요.</h2>
+  <p class="cta-sub">
+    지금 바로 무료로 시작해보세요.<br>
+    설치 없이, 가입 없이, 바로 추천받을 수 있어요.
+  </p>
+  <a class="btn-primary" href="./app">무료로 추천받기 →</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo" style="font-size:1rem;">OTT픽</div>
+  <div class="tmdb-attr">
+    <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB">
+    <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+  </div>
+  <div>© 2026 OTT픽</div>
+</footer>
+
+</body>
+</html>

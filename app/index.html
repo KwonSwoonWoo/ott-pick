@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OTT픽 — 오늘 뭐 볼까?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0e0e;--surface:#1a1a1a;--card:#1e1e1e;--border:#2a2a2a;--text:#f0ece4;--muted:#777;--accent:#e8c56d;--netflix:#e50914;--tving:#ff153c;--wavve:#0075ff;--watcha:#9b59b6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:1.2rem 3rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem}
+.logo{font-family:'Noto Serif KR',serif;font-size:1.6rem;font-weight:700;color:var(--accent)}
+.logo span{color:var(--text);font-weight:400;font-size:1rem}
+
+
+
+.api-status{font-size:0.7rem;color:#888}
+
+/* FORM */
+.form-wrap{max-width:720px;margin:0 auto;padding:3rem 2rem}
+.form-title{font-family:'Noto Serif KR',serif;font-size:2rem;font-weight:700;margin-bottom:0.5rem;line-height:1.3}
+.form-sub{color:var(--muted);font-size:0.9rem;margin-bottom:2.5rem}
+.form-section{margin-bottom:2rem}
+.form-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin-bottom:0.9rem;display:block}
+.chip-group{display:flex;flex-wrap:wrap;gap:0.5rem}
+.chip{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.45rem 1rem;border-radius:2rem;font-size:0.82rem;font-family:inherit;cursor:pointer;transition:all 0.15s}
+.chip:hover{border-color:#555;color:#ccc}
+.chip.selected{border-color:var(--accent);color:var(--accent);background:rgba(232,197,109,0.1)}
+.chip.selected.ott-netflix{border-color:var(--netflix);color:var(--netflix);background:rgba(229,9,20,0.1)}
+.chip.selected.ott-tving{border-color:var(--tving);color:var(--tving);background:rgba(255,21,60,0.1)}
+.chip.selected.ott-wavve{border-color:var(--wavve);color:var(--wavve);background:rgba(0,117,255,0.1)}
+.chip.selected.ott-watcha{border-color:var(--watcha);color:var(--watcha);background:rgba(155,89,182,0.1)}
+.extra-input{width:100%;background:#1a1a1a;border:1px solid var(--border);color:var(--text);padding:0.8rem 1rem;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none;resize:none;transition:border-color 0.2s}
+.extra-input:focus{border-color:#555}
+.extra-input::placeholder{color:#555}
+.submit-btn{width:100%;background:var(--accent);color:#0e0e0e;border:none;padding:1rem;border-radius:8px;font-size:1rem;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:1rem;transition:opacity 0.2s}
+.submit-btn:hover{opacity:0.85}
+.submit-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* RESULTS */
+.results-wrap{max-width:860px;margin:0 auto;padding:2rem 2rem 6rem;display:none}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.results-title{font-family:'Noto Serif KR',serif;font-size:1.4rem;font-weight:700}
+.retry-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.4rem 1rem;border-radius:2rem;font-size:0.8rem;font-family:inherit;cursor:pointer}
+.retry-btn:hover{border-color:#888;color:#ccc}
+.rec-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1.2rem;display:flex;gap:1.5rem;transition:border-color 0.2s}
+.rec-card:hover{border-color:#444}
+.rec-poster{width:90px;flex-shrink:0;border-radius:4px;object-fit:cover;aspect-ratio:2/3;background:#2a2a2a}
+.rec-poster-ph{width:90px;flex-shrink:0;border-radius:4px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;aspect-ratio:2/3}
+.rec-body{flex:1}
+.rec-rank{font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.3rem}
+.rec-title{font-family:'Noto Serif KR',serif;font-size:1.2rem;font-weight:700;margin-bottom:0.3rem;line-height:1.3}
+.rec-meta{font-size:0.75rem;color:var(--muted);margin-bottom:0.7rem;display:flex;gap:0.6rem;flex-wrap:wrap}
+.rec-reason{font-size:0.88rem;line-height:1.8;color:#ccc;margin-bottom:0.9rem}
+.rec-badges{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.badge{font-size:0.65rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:2px;text-transform:uppercase}
+.badge-netflix{background:rgba(229,9,20,0.15);color:#ff4d57;border:1px solid rgba(229,9,20,0.3)}
+.badge-tving{background:rgba(255,21,60,0.15);color:#ff6b7a;border:1px solid rgba(255,21,60,0.3)}
+.badge-wavve{background:rgba(0,117,255,0.15);color:#4d9fff;border:1px solid rgba(0,117,255,0.3)}
+.badge-watcha{background:rgba(155,89,182,0.15);color:#c39bd3;border:1px solid rgba(155,89,182,0.3)}
+.watch-btn{display:inline-block;padding:0.35rem 0.9rem;border-radius:2rem;font-size:0.75rem;font-weight:600;text-decoration:none;font-family:inherit;color:#fff}
+
+/* LOADING */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(14,14,14,0.92);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:1.2rem}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:2.5rem;height:2.5rem;border:2px solid #2a2a2a;border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+.loading-text{color:var(--muted);font-size:0.9rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:600px){
+  header,.form-wrap,.results-wrap{padding-left:1.2rem;padding-right:1.2rem}
+  .rec-card{flex-direction:column}
+  .rec-poster,.rec-poster-ph{width:100%;aspect-ratio:16/9;object-fit:cover}
+}
+
+/* ====== 감상문 패널 ====== */
+.cp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;padding:1.5rem}
+.cp-overlay.show{display:flex}
+.cp-panel{background:#161616;border:1px solid #2e2e2e;border-radius:10px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;position:relative}
+.cp-hero{display:flex;gap:1.5rem;padding:1.8rem 1.8rem 1.2rem;border-bottom:1px solid #2a2a2a}
+.cp-poster{width:80px;flex-shrink:0;border-radius:4px;aspect-ratio:2/3;object-fit:cover;background:#2a2a2a}
+.cp-poster-ph{width:80px;flex-shrink:0;border-radius:4px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;aspect-ratio:2/3}
+.cp-info{}
+.cp-rank-label{font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.3rem}
+.cp-title{font-family:'Noto Serif KR',serif;font-size:1.4rem;font-weight:700;line-height:1.3;margin-bottom:0.4rem}
+.cp-meta{font-size:0.75rem;color:var(--muted);display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.7rem}
+.cp-badges{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.cp-watch-btns{display:flex;gap:0.5rem;flex-wrap:wrap}
+.cp-body{padding:1.5rem 1.8rem 2rem}
+.cp-review-label{font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1rem;display:flex;align-items:center;gap:0.6rem}
+.cp-review-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,#333,transparent)}
+.cp-review-text{font-family:'Noto Serif KR',serif;font-size:1rem;line-height:2;color:#ddd}
+.cp-review-text p{margin-bottom:1.1rem}
+.cp-loading{display:flex;align-items:center;gap:0.8rem;color:#888;font-size:0.88rem}
+.cp-spinner{width:1rem;height:1rem;border:2px solid #333;border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
+.cp-close{position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:#666;font-size:1.6rem;cursor:pointer;line-height:1;padding:0.2rem 0.5rem}
+.cp-close:hover{color:#ccc}
+.cp-error{color:#ff6b6b;font-size:0.85rem;line-height:1.7}
+
+.spoiler-btn{margin-top:1.5rem;background:transparent;border:1px solid #444;color:#888;padding:0.5rem 1.2rem;border-radius:2rem;font-size:0.8rem;font-family:inherit;cursor:pointer;transition:all 0.2s;width:100%}
+.spoiler-btn:hover{border-color:#e8c56d;color:#e8c56d}
+.spoiler-section{margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #2a2a2a;display:none}
+.spoiler-label{font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#ff6b6b;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem}
+.spoiler-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,#442,transparent)}
+.spoiler-text{font-family:'Noto Serif KR',serif;font-size:1rem;line-height:2;color:#ddd}
+.spoiler-text p{margin-bottom:1.1rem}
+
+.ai-review-btn{margin-top:1rem;background:rgba(232,197,109,0.1);border:1px solid rgba(232,197,109,0.4);color:#e8c56d;padding:0.5rem 1.2rem;border-radius:2rem;font-size:0.8rem;font-family:inherit;cursor:pointer;transition:all 0.2s;width:100%;text-align:center}
+.ai-review-btn:hover{background:rgba(232,197,109,0.2);border-color:#e8c56d}
+.ai-review-btn--free{background:rgba(255,255,255,0.04);border-color:#444;color:#888}
+.ai-review-btn--free:hover{border-color:#e8c56d;color:#e8c56d}
+
+.vpn-banner{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #2e3a5c;border-radius:8px;padding:1.2rem 1.5rem;margin:1rem 0 0;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.saily-banner{background:linear-gradient(135deg,#1a2a1a,#1e3a1e);border:1px solid #2e5c2e;border-radius:8px;padding:1.2rem 1.5rem;margin:1rem 0 0;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.banner-left{display:flex;align-items:center;gap:1rem}
+.banner-icon{font-size:2rem;flex-shrink:0}
+.banner-title{font-size:0.9rem;font-weight:500;color:#f0ece4;margin-bottom:0.2rem}
+.banner-desc{font-size:0.75rem;color:#888;line-height:1.5}
+.vpn-btn{background:#4687ff;color:#fff;padding:0.5rem 1.2rem;border-radius:2rem;font-size:0.8rem;font-weight:600;text-decoration:none;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:opacity 0.2s}
+.vpn-btn:hover{opacity:0.85}
+.saily-btn{background:#f5c800;color:#1a1a1a;padding:0.5rem 1.2rem;border-radius:2rem;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:opacity 0.2s}
+.saily-btn:hover{opacity:0.85}
+
+.tmdb-footer{text-align:center;padding:2rem 1rem 3rem;color:#444;font-size:0.75rem;line-height:1.8}
+.tmdb-footer a{color:#555;text-decoration:none}
+.tmdb-footer a:hover{color:#888}
+.tmdb-logo{height:20px;vertical-align:middle;margin-right:0.4rem;opacity:0.5}
+
+/* ====== 4컷 만화 오버레이 ====== */
+.comic-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,10,0.96);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.comic-overlay.show{display:flex}
+.comic-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;width:100%}
+.comic-panel{background:#1a1a2e;border:2.5px solid #333;border-radius:10px;padding:1rem;position:relative;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;opacity:0;transform:scale(0.85);transition:opacity 0.4s ease,transform 0.4s ease}
+.comic-panel.show{opacity:1;transform:scale(1)}
+.comic-char{font-size:3rem;line-height:1}
+.comic-bubble{background:#fff;color:#111;border-radius:12px;padding:0.4rem 0.7rem;font-size:0.72rem;font-family:'Noto Sans KR',sans-serif;font-weight:500;line-height:1.5;text-align:center;position:relative;max-width:130px}
+.comic-bubble::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#fff}
+.comic-panel:nth-child(2) .comic-bubble::after{bottom:auto;top:-8px;border-top-color:transparent;border-bottom-color:#fff}
+.comic-mbti-tag{background:var(--accent);color:#0a0a0a;padding:0.2rem 0.6rem;border-radius:1rem;font-size:0.8rem;font-weight:700;font-family:'Noto Sans KR',sans-serif}
+.comic-panel-num{position:absolute;top:6px;left:8px;font-size:0.6rem;color:#444;font-family:'Noto Sans KR',sans-serif}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">OTT픽 <span>/ 오늘 뭐 볼까?</span></div>
+  <div style="display:flex;align-items:center;gap:0.8rem;">
+    <span id="user-email" style="font-size:0.75rem;color:#666;"></span>
+    <a id="auth-btn" href="../login" style="background:transparent;border:1px solid #e8c56d;color:#e8c56d;padding:0.35rem 0.9rem;border-radius:2rem;font-size:0.75rem;font-family:inherit;cursor:pointer;text-decoration:none;">로그인</a>
+  </div>
+
+</header>
+
+<!-- 취향 입력 폼 -->
+<div class="form-wrap" id="form-wrap">
+  <div class="form-title">오늘 어떤 작품이<br>보고 싶으세요?</div>
+  <div class="form-sub">“지금 내 상황”까지 넣으면, AI가 더 정확하게 골라드려요.</div>
+
+  <div class="form-section">
+    <span class="form-label">🎬 보유 OTT (복수 선택 가능)</span>
+    <div class="chip-group" id="ott-chips">
+      <button class="chip ott-netflix" data-group="ott" data-val="넷플릭스">넷플릭스</button>
+      <button class="chip ott-tving"   data-group="ott" data-val="티빙">티빙</button>
+      <button class="chip ott-wavve"   data-group="ott" data-val="웨이브">웨이브</button>
+      <button class="chip ott-watcha"  data-group="ott" data-val="왓챠">왓챠</button>
+      <button class="chip"             data-group="ott" data-val="상관없음">상관없음</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <span class="form-label">🎭 장르 (복수 선택 가능)</span>
+    <div class="chip-group">
+      <button class="chip" data-group="genre" data-val="액션">액션</button>
+      <button class="chip" data-group="genre" data-val="스릴러">스릴러</button>
+      <button class="chip" data-group="genre" data-val="로맨스">로맨스</button>
+      <button class="chip" data-group="genre" data-val="코미디">코미디</button>
+      <button class="chip" data-group="genre" data-val="드라마">드라마</button>
+      <button class="chip" data-group="genre" data-val="SF/판타지">SF/판타지</button>
+      <button class="chip" data-group="genre" data-val="공포/미스터리">공포/미스터리</button>
+      <button class="chip" data-group="genre" data-val="다큐멘터리">다큐멘터리</button>
+      <button class="chip" data-group="genre" data-val="애니메이션">애니메이션</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <span class="form-label">🌡️ 오늘의 분위기</span>
+    <div class="chip-group">
+      <button class="chip" data-group="mood" data-val="가볍게 웃으면서">가볍게 웃으면서</button>
+      <button class="chip" data-group="mood" data-val="몰입해서 긴장감 있게">몰입해서 긴장감 있게</button>
+      <button class="chip" data-group="mood" data-val="감동받고 싶게">감동받고 싶게</button>
+      <button class="chip" data-group="mood" data-val="무섭고 손 떨리게">무섭고 손 떨리게</button>
+      <button class="chip" data-group="mood" data-val="묵직하게 생각하면서">묵직하게 생각하면서</button>
+      <button class="chip" data-group="mood" data-val="멍하게 힐링">멍하게 힐링</button>
+    </div>
+  </div>
+
+  <!-- ✅ 니치 포인트: 상황(누구랑) -->
+  <div class="form-section">
+    <span class="form-label">🧠 MBTI (선택)</span>
+    <div class="chip-group" style="margin-bottom:0.5rem;">
+      <button class="chip" data-group="mbti" data-val="E">E (외향)</button>
+      <button class="chip" data-group="mbti" data-val="I">I (내향)</button>
+      <button class="chip" data-group="mbti" data-val="N">N (직관)</button>
+      <button class="chip" data-group="mbti" data-val="S">S (감각)</button>
+    </div>
+    <div class="chip-group">
+      <button class="chip" data-group="mbti" data-val="T">T (사고)</button>
+      <button class="chip" data-group="mbti" data-val="F">F (감정)</button>
+      <button class="chip" data-group="mbti" data-val="J">J (판단)</button>
+      <button class="chip" data-group="mbti" data-val="P">P (인식)</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <span class="form-label">👥 누구랑 보세요? (선택)</span>
+    <div class="chip-group">
+      <button class="chip" data-group="context" data-val="혼자">혼자</button>
+      <button class="chip" data-group="context" data-val="연인과">연인과</button>
+      <button class="chip" data-group="context" data-val="가족과">가족과</button>
+      <button class="chip" data-group="context" data-val="아이와">아이와</button>
+      <button class="chip" data-group="context" data-val="친구와">친구와</button>
+      <button class="chip" data-group="context" data-val="밥 먹으면서">밥 먹으면서</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <span class="form-label">⏱️ 시청 시간</span>
+    <div class="chip-group">
+      <button class="chip" data-group="time" data-val="30분 이내 단편">30분 이내 단편</button>
+      <button class="chip" data-group="time" data-val="1~2시간 영화">1~2시간 영화</button>
+      <button class="chip" data-group="time" data-val="에피소드 연속 드라마">에피소드 연속 드라마</button>
+      <button class="chip" data-group="time" data-val="시즌 정주행">시즌 정주행</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <span class="form-label">💬 추가로 알려주세요 (선택)</span>
+    <textarea class="extra-input" id="extra-input" rows="3"
+      placeholder="예: 최근에 오징어게임 봤어요. 비슷한 거 추천해줘요. / 아이랑 같이 볼 건데요. / 너무 무거운 건 싫어요."></textarea>
+  </div>
+
+  <button class="submit-btn" id="submit-btn">AI 추천 받기 →</button>
+</div>
+
+<!-- 결과 영역 -->
+<div class="results-wrap" id="results-wrap">
+  <div class="results-header">
+    <div class="results-title" id="results-title">AI 추천 결과</div>
+    <button class="retry-btn" id="retry-btn">← 다시 입력</button>
+  </div>
+
+  <!-- 비회원 안내 -->
+  <div id="free-notice" style="display:none;background:rgba(232,197,109,0.08);border:1px solid rgba(232,197,109,0.3);border-radius:8px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;color:#e8c56d;line-height:1.7;">
+    ✦ 지금은 TMDB 인기작 기반 무료 추천이에요.<br>
+    <span style="color:#aaa;">AI 맞춤 추천 + 감상문은 <strong style="color:#e8c56d;">회원 전용</strong> 기능이에요.</span>
+  </div>
+  <div id="results-list"></div>
+
+  <!-- Saily eSIM 배너 -->
+  <div class="saily-banner" id="saily-banner" style="display:none;">
+    <div class="banner-left">
+      <div class="banner-icon">📱</div>
+      <div>
+        <div class="banner-title">해외여행 중에도 OTT 끊김없이 즐기려면?</div>
+        <div class="banner-desc">Saily eSIM으로 해외에서도 저렴하게 데이터를 사용하세요. 170개국 지원.</div>
+      </div>
+    </div>
+    <a class="saily-btn" href="https://saily.com/ko/" target="_blank" rel="noopener sponsored">Saily eSIM 할인받기 →</a>
+  </div>
+
+  <!-- NordVPN 배너 -->
+  <div class="vpn-banner" id="vpn-banner" style="display:none;">
+    <div class="banner-left">
+      <div class="banner-icon">🔒</div>
+      <div>
+        <div class="banner-title">해외 OTT 콘텐츠도 즐기고 싶다면?</div>
+        <div class="banner-desc">VPN으로 넷플릭스 해외 콘텐츠, 디즈니+ 미공개 작품 등을 안전하게 즐겨보세요.</div>
+      </div>
+    </div>
+    <a class="vpn-btn" href="https://nordvpn.com/ko/" target="_blank" rel="noopener sponsored">NordVPN 할인받기 →</a>
+  </div>
+
+</div>
+
+<!-- 로딩 -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">취향 분석 중...</div>
+</div>
+
+<!-- ✅ 감상문(결정 보조) 패널: 중복 제거 + id 유일 -->
+<div class="cp-overlay" id="cp-overlay" aria-hidden="true">
+  <div class="cp-panel" id="cp-panel" role="dialog" aria-modal="true" aria-label="작품 요약 패널">
+    <button class="cp-close" id="cp-close" aria-label="닫기">×</button>
+    <div class="cp-hero">
+      <div id="cp-poster-wrap"></div>
+      <div class="cp-info">
+        <div class="cp-rank-label" id="cp-rank"></div>
+        <div class="cp-title" id="cp-title"></div>
+        <div class="cp-meta" id="cp-meta"></div>
+        <div class="cp-badges" id="cp-badges"></div>
+        <div class="cp-watch-btns" id="cp-watch-btns"></div>
+      </div>
+    </div>
+    <div class="cp-body">
+      <div class="cp-review-label">✦ 스포일러 없는 30초 요약</div>
+      <div class="cp-review-text" id="cp-review-text">
+        <div class="cp-loading"><div class="cp-spinner"></div><span>요약 작성 중... (10~20초)</span></div>
+      </div>
+      <button class="spoiler-btn" id="spoiler-btn" style="display:none;" onclick="loadSpoilerReview()">
+        🚨 스포일러 포함 감상문 보기
+      </button>
+      <div class="spoiler-section" id="spoiler-section">
+        <div class="spoiler-label">⚠️ 스포일러 주의</div>
+        <div class="spoiler-text" id="spoiler-text"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== 상수/매핑 ====== */
+const TMDB_KEY = 'fc3860d733ccc3a6f61a086aab708046';
+const BASE = 'https://api.themoviedb.org/3';
+const IMG = 'https://image.tmdb.org/t/p/w500';
+const OTT_MAP = {
+  8:{name:'넷플릭스',key:'netflix',badge:'badge-netflix'},
+  1796:{name:'넷플릭스',key:'netflix',badge:'badge-netflix'},
+  1883:{name:'티빙',key:'tving',badge:'badge-tving'},
+  356:{name:'웨이브',key:'wavve',badge:'badge-wavve'},
+  97:{name:'왓챠',key:'watcha',badge:'badge-watcha'},
+};
+const OTT_LINKS = {
+  netflix:'https://www.netflix.com/search?q=',
+  tving:'https://www.tving.com/search?kwd=',
+  wavve:'https://www.wavve.com/search?searchWord=',
+  watcha:'https://watcha.com/search?query=',
+};
+const BADGE_COLORS = {netflix:'#e50914',tving:'#ff153c',wavve:'#0075ff',watcha:'#9b59b6'};
+
+/* ====== 키 저장 ====== */
+function saveApiKey() {
+
+}
+async function getApiKey() {
+  // 이미 확인된 경우
+  if (window._isLoggedIn) return 'server';
+  // 아직 확인 안 된 경우 Supabase 세션 직접 체크
+  try {
+    if (window._supabase) {
+      const { data: { session } } = await window._supabase.auth.getSession();
+      if (session) { window._isLoggedIn = true; return 'server'; }
+    }
+  } catch(e) {}
+  return null;
+}
+
+/* ====== UI 헬퍼 ====== */
+function setLoading(show, text) {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('show', show);
+  if (text) document.getElementById('loading-text').textContent = text;
+}
+function getSelected(group) {
+  return [...document.querySelectorAll(`.chip.selected[data-group="${group}"]`)]
+    .map(c => c.dataset.val);
+}
+
+/* ====== TMDB ====== */
+async function fetchProviders(id, type) {
+  try {
+    const r = await fetch(`${BASE}/${type}/${id}/watch/providers?api_key=${TMDB_KEY}`);
+    const d = await r.json();
+    const kr = d.results?.KR;
+    if (!kr) return [];
+    return [...(kr.flatrate||[]),...(kr.free||[])]
+      .filter(p=>OTT_MAP[p.provider_id])
+      .map(p=>OTT_MAP[p.provider_id]);
+  } catch(e) { return []; }
+}
+
+
+/* ====== MBTI 장르 매핑 ====== */
+const MBTI_GENRE_MAP = {
+  'E': [28, 35, 12],        // 액션, 코미디, 어드벤처
+  'I': [18, 99, 9648],      // 드라마, 다큐, 미스터리
+  'N': [878, 14, 9648],     // SF, 판타지, 미스터리
+  'S': [10749, 18, 35],     // 로맨스, 드라마, 코미디
+  'T': [53, 80, 99],        // 스릴러, 범죄, 다큐
+  'F': [10749, 18, 10751],  // 로맨스, 드라마, 가족
+  'J': [18, 53, 80],        // 드라마, 스릴러, 범죄
+  'P': [35, 12, 16],        // 코미디, 어드벤처, 애니메이션
+};
+
+function getMbtiGenreIds(mbtiAxes) {
+  if (!mbtiAxes.length) return [];
+  const ids = mbtiAxes.flatMap(m => MBTI_GENRE_MAP[m] || []);
+  // 빈도수 기반으로 중복 많은 장르 우선
+  const freq = {};
+  ids.forEach(id => freq[id] = (freq[id] || 0) + 1);
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id]) => Number(id));
+}
+
+/* ====== TMDB 장르 ID 매핑 ====== */
+const GENRE_MAP = {
+  '액션': [28, 10759], '스릴러': [53], '로맨스': [10749], '코미디': [35],
+  '드라마': [18], 'SF/판타지': [878, 14], '공포/미스터리': [27, 9648],
+  '다큐멘터리': [99], '애니메이션': [16],
+};
+const MOOD_SORT = {
+  '가볍게 웃으면서': 'popularity.desc',
+  '몰입해서 긴장감 있게': 'vote_average.desc',
+  '감동받고 싶게': 'vote_average.desc',
+  '무섭고 손 떨리게': 'popularity.desc',
+  '묵직하게 생각하면서': 'vote_average.desc',
+  '멍하게 힐링': 'popularity.desc',
+};
+const OTT_PROVIDER_IDS = {
+  '넷플릭스': '8', '티빙': '1883', '웨이브': '356', '왓챠': '97', '상관없음': ''
+};
+
+async function getRecommendationsFree(otts, genres, moods, times, mbtiAxes=[]) {
+  // 장르 ID 수집 (장르 칩 + MBTI 매핑 합산)
+  const mbtiGenreIds = getMbtiGenreIds(mbtiAxes);
+  const genreIds = [...new Set([
+    ...genres.flatMap(g => GENRE_MAP[g] || []),
+    ...mbtiGenreIds
+  ])];
+
+  // 정렬 방식
+  const sortBy = moods.length ? (MOOD_SORT[moods[0]] || 'popularity.desc') : 'popularity.desc';
+
+  // 영화/TV 결정
+  const mediaType = times.includes('1~2시간 영화') || times.includes('30분 이내 단편')
+    ? 'movie' : times.includes('에피소드 연속 드라마') || times.includes('시즌 정주행')
+    ? 'tv' : 'movie'; // 기본값 영화
+
+  // OTT provider ID
+  const ottIds = otts.filter(o => o !== '상관없음').map(o => OTT_PROVIDER_IDS[o]).filter(Boolean);
+  const watchProviders = ottIds.join('|') || '8|1883|356|97';
+
+  let url = `${BASE}/discover/${mediaType}?api_key=${TMDB_KEY}&language=ko-KR`
+    + `&sort_by=${sortBy}`
+    + `&vote_count.gte=100`
+    + `&with_watch_providers=${watchProviders}`
+    + `&watch_region=KR`;
+
+  if (genreIds.length) url += `&with_genres=${genreIds.slice(0,2).join('|')}`;
+
+  const r = await fetch(url);
+  const d = await r.json();
+  const results = (d.results || []).slice(0, 10);
+
+  // provider 정보 추가
+  const enriched = await Promise.all(results.slice(0, 5).map(async item => {
+    const providers = await fetchProviders(item.id, mediaType);
+    const koTitle = item.title || item.name;
+    const year = (item.release_date || item.first_air_date || '').slice(0, 4);
+    return {
+      title: koTitle,
+      title_en: koTitle,
+      year,
+      type: mediaType,
+      genre: genres.join(', ') || '',
+      hook: item.overview ? item.overview.slice(0, 40) + '...' : '',
+      reason: item.overview || '',
+      poster: item.poster_path,
+      providers,
+      tmdb_id: item.id,
+      vote_average: item.vote_average,
+    };
+  }));
+
+  return enriched.filter(i => i.providers.length > 0).slice(0, 5);
+}
+
+async function searchTMDB(query, type, year) {
+  let url = `${BASE}/search/${type}?api_key=${TMDB_KEY}&language=ko-KR&query=${encodeURIComponent(query)}`;
+  if (year) url += `&year=${year}`;
+  let r = await fetch(url);
+  let d = await r.json();
+  if (d.results && d.results.length > 0) return d.results;
+
+  r = await fetch(`${BASE}/search/${type}?api_key=${TMDB_KEY}&language=ko-KR&query=${encodeURIComponent(query)}`);
+  d = await r.json();
+  return d.results || [];
+}
+
+/* ====== 패널 닫기(버그 수정) ====== */
+function closeCurationPanel(evt) {
+  const overlay = document.getElementById('cp-overlay');
+  if (!overlay) return;
+
+  // overlay 빈 영역 클릭 시 닫기
+  if (!evt || evt.target === overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+}
+
+/* ====== 추천 ====== */
+async function getRecommendations() {
+  const apiKey = await getApiKey();
+  const mbtiSel = getSelected('mbti');
+
+  // 비회원 TMDB 추천
+  if (!apiKey) {
+    const otts   = getSelected('ott');
+    const genres = getSelected('genre');
+    const moods  = getSelected('mood');
+    const times  = getSelected('time');
+    if (!genres.length && !moods.length && !times.length && !mbtiSel.length) {
+      alert('취향을 하나 이상 선택해주세요.'); return;
+    }
+    showMembershipPopup('recommend', async () => {
+      document.getElementById('submit-btn').disabled = true;
+      const doFree = async () => {
+        setLoading(true, 'TMDB에서 추천 작품 찾는 중...');
+        try {
+          const recs = await getRecommendationsFree(otts, genres, moods, times, mbtiSel);
+          setLoading(false);
+          renderResults(recs, otts, genres, moods, [], true);
+        } catch(err) {
+          setLoading(false);
+          document.getElementById('submit-btn').disabled = false;
+          alert('오류: ' + err.message);
+        }
+      };
+      if (mbtiSel.length) showComicThenLoad(doFree, mbtiSel);
+      else doFree();
+    });
+    return;
+  }
+
+  // 회원 AI 추천
+  const otts     = getSelected('ott');
+  const genres   = getSelected('genre');
+  const moods    = getSelected('mood');
+  const contexts = getSelected('context');
+  const times    = getSelected('time');
+  const extra    = document.getElementById('extra-input').value.trim();
+
+  if (!genres.length && !moods.length && !times.length && !contexts.length && !extra && !mbtiSel.length) {
+    alert('취향을 하나 이상 선택해주세요.'); return;
+  }
+
+  document.getElementById('submit-btn').disabled = true;
+
+  const doMember = async () => {
+    setLoading(true, 'AI가 작품 고르는 중...');
+    try {
+      const res = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({otts, genres, moods, times, contexts, extra, mbti: mbtiSel})
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(()=>({}));
+        throw new Error(e.error || res.status);
+      }
+      const recs = await res.json();
+
+      setLoading(true, 'TMDB에서 포스터 불러오는 중...');
+      const enriched = await Promise.all(recs.map(async rec => {
+        try {
+          const tmdbType = rec.type === 'movie' ? 'movie' : 'tv';
+          const query = rec.title_en || rec.title;
+          const year = rec.year ? rec.year.toString().slice(0,4) : null;
+          const results = await searchTMDB(query, tmdbType, year);
+          let match = results[0];
+          if (year && results.length > 1) {
+            const byYear = results.find(r => {
+              const d = r.release_date || r.first_air_date || '';
+              return d.startsWith(year) || d.startsWith(String(parseInt(year)-1));
+            });
+            if (byYear) match = byYear;
+          }
+          if (!match) return {...rec, poster:null, providers:[], tmdb_id:null};
+          const providers = await fetchProviders(match.id, tmdbType);
+          const koTitle = match.title || match.name || rec.title;
+          return {...rec, poster: match.poster_path, providers, tmdb_id: match.id, title: koTitle};
+        } catch(e) {
+          return {...rec, poster:null, providers:[], tmdb_id:null};
+        }
+      }));
+
+      setLoading(false);
+      renderResults(enriched, otts, genres, moods, contexts);
+    } catch(err) {
+      setLoading(false);
+      document.getElementById('submit-btn').disabled = false;
+      alert('오류: ' + err.message);
+    }
+  };
+
+  if (mbtiSel.length) showComicThenLoad(doMember, mbtiSel);
+  else doMember();
+}
+
+function renderResults(recs, otts, genres, moods, contexts, isFree=false) {
+  document.getElementById('form-wrap').style.display = 'none';
+  const wrap = document.getElementById('results-wrap');
+  wrap.style.display = 'block';
+
+  const summary = [
+    otts.length ? otts.join('/') : null,
+    genres.length ? genres.join('+') : null,
+    moods.length ? moods[0] : null,
+    contexts.length ? contexts[0] : null,
+  ].filter(Boolean).join(' · ');
+
+  document.getElementById('results-title').textContent = `"${summary}" 지금 보기 추천`;
+
+  const list = document.getElementById('results-list');
+  // 비회원 안내 배너
+  const freeNotice = document.getElementById('free-notice');
+  if (freeNotice) freeNotice.style.display = isFree ? 'block' : 'none';
+  list.innerHTML = '';
+
+  recs.forEach((rec, i) => {
+    const providers = (rec.providers||[]);
+    const uniqueProviders = [...new Map(providers.map(p=>[p.key,p])).values()];
+
+    const badgesHTML = uniqueProviders
+      .map(p=>`<span class="badge ${p.badge}">${p.name}</span>`)
+      .join('');
+
+    const watchBtns = uniqueProviders.map(p => {
+      const url = (OTT_LINKS[p.key]||'') + encodeURIComponent(rec.title);
+      return `<a class="watch-btn" href="${url}" target="_blank" rel="noopener"
+        style="background:${BADGE_COLORS[p.key]||'#444'};">${p.name}에서 보기 →</a>`;
+    }).join('');
+
+    const posterHTML = rec.poster
+      ? `<img class="rec-poster" src="${IMG}${rec.poster}" alt="${rec.title}" loading="lazy">`
+      : `<div class="rec-poster-ph">🎬</div>`;
+
+    const card = document.createElement('div');
+    card.className = 'rec-card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      ${posterHTML}
+      <div class="rec-body">
+        <div class="rec-rank">추천 ${i+1}</div>
+        <div class="rec-title">${rec.title}</div>
+        <div class="rec-meta">
+          <span>${rec.year||''}</span>
+          <span>${rec.genre||''}</span>
+          <span>${rec.type==='movie'?'영화':'드라마/시리즈'}</span>
+        </div>
+        <div class="rec-reason"><em style="color:var(--accent);font-style:normal;">"${rec.hook||''}"</em><br><br>${rec.reason||''}</div>
+        ${badgesHTML ? `<div class="rec-badges">${badgesHTML}</div>` : '<div style="font-size:0.78rem;color:#555;margin-bottom:0.8rem;">한국 OTT 정보 없음</div>'}
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">${watchBtns}</div>
+      </div>
+    `;
+    if (!isFree) {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => openCurationPanel(rec, i));
+      // 회원: AI 감상문 버튼
+      const aiBtn = document.createElement('button');
+      aiBtn.className = 'ai-review-btn';
+      aiBtn.innerHTML = '🎬 AI 큐레이터 감상문 보기';
+      aiBtn.addEventListener('click', (e) => { e.stopPropagation(); openCurationPanel(rec, i); });
+      card.querySelector('.rec-body').appendChild(aiBtn);
+    } else {
+      card.style.cursor = 'default';
+      // 비회원: AI 감상문 버튼 (클릭 시 회원가입 안내)
+      const aiBtn = document.createElement('button');
+      aiBtn.className = 'ai-review-btn ai-review-btn--free';
+      aiBtn.innerHTML = '🎬 AI 큐레이터 감상문 보기';
+      aiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showMembershipPopup('review');
+      });
+      card.querySelector('.rec-body').appendChild(aiBtn);
+    }
+    list.appendChild(card);
+  });
+  document.getElementById('vpn-banner').style.display = 'flex';
+  document.getElementById('saily-banner').style.display = 'flex';
+}
+
+function resetForm() {
+  document.getElementById('form-wrap').style.display = 'block';
+  document.getElementById('results-wrap').style.display = 'none';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('results-list').innerHTML = '';
+  document.getElementById('vpn-banner').style.display = 'none';
+  document.getElementById('saily-banner').style.display = 'none';
+}
+
+/* ====== 패널 열기 + “스포일러 없는 30초 요약” ====== */
+async function openCurationPanel(rec, rankIndex) {
+  currentRec = rec; // 스포일러용 저장
+  document.getElementById('spoiler-btn').style.display = 'none';
+  document.getElementById('spoiler-section').style.display = 'none';
+  document.getElementById('spoiler-text').innerHTML = '';
+  const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+  const OTT_LINKS_MAP = {netflix:'https://www.netflix.com/search?q=',tving:'https://www.tving.com/search?kwd=',wavve:'https://www.wavve.com/search?searchWord=',watcha:'https://watcha.com/search?query='};
+  const BADGE_COL = {netflix:'#e50914',tving:'#ff153c',wavve:'#0075ff',watcha:'#9b59b6'};
+
+  const overlay = document.getElementById('cp-overlay');
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  document.getElementById('cp-rank').textContent = `추천 ${Number(rankIndex)+1}`;
+  document.getElementById('cp-poster-wrap').innerHTML = rec.poster
+    ? '<img class="cp-poster" src="'+IMG_BASE+rec.poster+'" alt="">'
+    : '<div class="cp-poster-ph">🎬</div>';
+
+  document.getElementById('cp-title').textContent = rec.title;
+  document.getElementById('cp-meta').innerHTML =
+    '<span>'+(rec.year||'')+'</span><span>'+(rec.genre||'')+'</span><span>'+(rec.type==='movie'?'영화':'드라마/시리즈')+'</span>';
+
+  const providers = [...new Map((rec.providers||[]).map(p=>[p.key,p])).values()];
+  document.getElementById('cp-badges').innerHTML = providers.map(p=>'<span class="badge '+p.badge+'">'+p.name+'</span>').join('');
+  document.getElementById('cp-watch-btns').innerHTML = providers.map(p=>
+    '<a href="'+(OTT_LINKS_MAP[p.key]||'')+encodeURIComponent(rec.title)+'" target="_blank" rel="noopener" style="background:'+(BADGE_COL[p.key]||'#444')+';color:#fff;padding:0.35rem 0.9rem;border-radius:2rem;font-size:0.75rem;font-weight:600;text-decoration:none;font-family:inherit;">'+p.name+'에서 보기 →</a>'
+  ).join('');
+
+  document.getElementById('cp-review-text').innerHTML = '<div class="cp-loading"><div class="cp-spinner"></div><span>요약 작성 중... (10~20초)</span></div>';
+
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    document.getElementById('cp-review-text').innerHTML = '<p style="color:#666;">AI 감상문은 회원 전용 기능이에요.</p>';
+    return;
+  }
+
+  const contexts = getSelected('context');
+  const moods = getSelected('mood');
+  const times = getSelected('time');
+
+  // ✅ 니치: “결정 보조” 포맷(스포일러 금지)
+  const prompt =
+`당신은 한국 OTT 큐레이터입니다. "${rec.title} (${rec.year||''})"에 대해 웹 검색을 바탕으로,
+사용자가 "지금 바로 볼지" 결정할 수 있게, 스포일러 없이 아주 간결하고 매력적으로 작성하세요.
+
+사용자 맥락:
+- 분위기: ${moods.length ? moods.join(', ') : '상관없음'}
+- 누구랑: ${contexts.length ? contexts.join(', ') : '상관없음'}
+- 시청 시간: ${times.length ? times.join(', ') : '상관없음'}
+
+아래 형식 그대로, 한국어 존댓말, URL/출처 링크 금지, 스포일러 금지:
+
+[30초 요약] 3~4문장
+
+[왜 지금 보기 좋아요] 2문장
+
+[이런 분께 추천] 3개 불릿(•)
+
+[비슷한 작품 1개] 제목 + 한 줄 이유`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+apiKey.trim(),'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'gpt-4o',
+        tools:[{type:'web_search_preview'}],
+        input:prompt,
+        max_output_tokens:650
+      })
+    });
+    if (!res.ok) {
+      const e=await res.json().catch(()=>({}));
+      throw new Error((e.error&&e.error.message)||res.status);
+    }
+    const result = await res.json();
+    const msg = (result.output||[]).find(o=>o.type==='message');
+    const text = msg?.content?.find(c=>c.type==='output_text')?.text||'';
+
+    const paras = text.split(/\n\n+/).filter(p=>p.trim());
+    document.getElementById('cp-review-text').innerHTML =
+      paras.map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
+
+    // 스포일러 버튼 표시
+    document.getElementById('spoiler-btn').style.display = 'block';
+    document.getElementById('spoiler-section').style.display = 'none';
+    document.getElementById('spoiler-text').innerHTML = '';
+
+  } catch(err) {
+    document.getElementById('cp-review-text').innerHTML = '<p class="cp-error">오류: '+err.message+'</p>';
+  }
+}
+
+let currentRec = null;
+
+
+
+function showMembershipPopup(type, onClose) {
+  const overlay = document.getElementById('membership-overlay');
+  const icon = document.getElementById('membership-icon');
+  const title = document.getElementById('membership-title');
+  const desc = document.getElementById('membership-desc');
+
+  if (type === 'review') {
+    icon.textContent = '🎬';
+    title.textContent = 'AI 감상문은 회원 전용이에요';
+    desc.textContent = 'AI 큐레이터가 작성한 맞춤 감상문과\n스포일러 분석을 즐겨보세요.';
+  } else if (type === 'recommend') {
+    icon.textContent = '✨';
+    title.textContent = 'AI 맞춤 추천은 회원 전용이에요';
+    desc.textContent = 'AI가 취향을 분석해 딱 맞는 작품을\n추천해드려요. 지금은 TMDB 인기작 기준으로\n무료 추천을 먼저 보여드릴게요.';
+  }
+
+  overlay.style.display = 'flex';
+
+  // 닫기 버튼들에 콜백 연결
+  let autoCloseTimer = null;
+  const closePopup = () => {
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+    overlay.style.display = 'none';
+    if (onClose) onClose();
+  };
+
+  const closeButtons = overlay.querySelectorAll('button');
+  closeButtons.forEach(btn => {
+    const original = btn.getAttribute('onclick') || '';
+    btn.onclick = () => {
+      if (original.includes('api-key-input')) {
+        
+      }
+      closePopup();
+    };
+  });
+
+  // 3초 후 자동 닫기
+  if (onClose) {
+    // 카운트다운 표시
+    const countEl = document.getElementById('membership-countdown');
+    if (countEl) {
+      let sec = 3;
+      countEl.textContent = `(${sec}초 후 자동으로 추천 결과를 보여드려요)`;
+      const interval = setInterval(() => {
+        sec--;
+        if (sec > 0) countEl.textContent = `(${sec}초 후 자동으로 추천 결과를 보여드려요)`;
+        else clearInterval(interval);
+      }, 1000);
+      autoCloseTimer = setTimeout(() => { clearInterval(interval); closePopup(); }, 3000);
+    } else {
+      autoCloseTimer = setTimeout(closePopup, 3000);
+    }
+  }
+}
+
+
+/* ====== 4컷 만화 ====== */
+const MBTI_SHORT = {
+  E:'활발하고 에너지 넘쳐!', I:'조용하고 깊이 있어~',
+  N:'상상력이 풍부하구나!', S:'현실적이고 섬세해!',
+  T:'논리적으로 분석하네!', F:'감수성이 넘치는구나!',
+  J:'계획적이고 완결 선호!', P:'자유롭고 열린 마음!'
+};
+
+function showComicThenLoad(loadFn, mbtiAxes) {
+  const overlay = document.getElementById('comic-overlay');
+  overlay.classList.add('show');
+
+  // 패널 초기화
+  ['cp1','cp2','cp3','cp4'].forEach(id => {
+    document.getElementById(id).classList.remove('show');
+  });
+
+  // MBTI 태그 설정
+  const mbtiLabel = mbtiAxes.length ? mbtiAxes.join('') : '?';
+  document.getElementById('mbti-tag').textContent = mbtiLabel;
+
+  // MBTI 성격 설명
+  const desc = mbtiAxes.length
+    ? mbtiAxes.map(m => MBTI_SHORT[m] || '').filter(Boolean).join(' ')
+    : '취향 분석 중...';
+  document.getElementById('cb3').textContent = desc;
+
+  // 순서대로 패널 등장
+  setTimeout(() => document.getElementById('cp1').classList.add('show'), 100);
+  setTimeout(() => document.getElementById('cp2').classList.add('show'), 600);
+  setTimeout(() => document.getElementById('cp3').classList.add('show'), 1100);
+  setTimeout(() => document.getElementById('cp4').classList.add('show'), 1600);
+
+  // 2.5초 후 만화 닫고 로딩 시작
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    loadFn();
+  }, 2800);
+}
+
+/* ====== 스포일러 감상문 ====== */
+async function loadSpoilerReview() {
+  if (!currentRec) return;
+  const btn = document.getElementById('spoiler-btn');
+  const section = document.getElementById('spoiler-section');
+  const spoilerText = document.getElementById('spoiler-text');
+
+  btn.style.display = 'none';
+  section.style.display = 'block';
+  spoilerText.innerHTML = '<div class="cp-loading"><div class="cp-spinner"></div><span>스포일러 감상문 작성 중...</span></div>';
+
+  const apiKey = await getApiKey();
+  const rec = currentRec;
+
+  const prompt = `"${rec.title} (${rec.year||''})"에 대해 웹 검색 후 스포일러를 포함한 깊은 감상문을 써주세요.
+
+다음 구조로 작성하세요:
+
+[핵심 스포일러 요약] 주요 반전, 결말, 핵심 장면 2~3문장
+
+[인상적인 장면] 가장 화제가 된 장면이나 대사 2~3문장
+
+[작품이 말하고 싶은 것] 주제의식, 메시지 2~3문장
+
+조건: 한국어 존댓말, URL 금지, 마크다운 금지, 단락 사이 빈 줄`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+apiKey.trim(),'Content-Type':'application/json'},
+      body: JSON.stringify({model:'gpt-4o-mini',tools:[{type:'web_search_preview'}],input:prompt,max_output_tokens:600})
+    });
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error((e.error&&e.error.message)||res.status); }
+    const result = await res.json();
+    const msg = (result.output||[]).find(o=>o.type==='message');
+    const text = msg?.content?.find(c=>c.type==='output_text')?.text||'';
+    const paras = text.split(/\n\n+/).filter(p=>p.trim());
+    spoilerText.innerHTML = paras.map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
+  } catch(err) {
+    spoilerText.innerHTML = '<p style="color:#ff6b6b;">오류: '+err.message+'</p>';
+    btn.style.display = 'block';
+  }
+}
+
+/* ====== 초기 바인딩 (DOM 로딩 후: 버그 수정) ====== */
+document.addEventListener('DOMContentLoaded', () => {
+  // 칩 선택
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const group = chip.dataset.group;
+      const val = chip.dataset.val;
+      // MBTI는 같은 쌍(E/I, N/S, T/F, J/P)에서 하나만 선택
+      if (group === 'mbti') {
+        const pairs = {E:'I', I:'E', N:'S', S:'N', T:'F', F:'T', J:'P', P:'J'};
+        const opposite = pairs[val];
+        if (opposite) {
+          document.querySelectorAll(`.chip[data-group="mbti"][data-val="${opposite}"]`)
+            .forEach(b => b.classList.remove('selected'));
+        }
+      }
+      chip.classList.toggle('selected');
+    });
+  });
+
+  // 버튼들
+
+  document.getElementById('submit-btn')?.addEventListener('click', getRecommendations);
+  document.getElementById('retry-btn')?.addEventListener('click', resetForm);
+
+  // 패널 닫기
+  document.getElementById('cp-close')?.addEventListener('click', () => closeCurationPanel());
+  document.getElementById('cp-overlay')?.addEventListener('click', (e) => closeCurationPanel(e));
+
+  // ESC 닫기
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCurationPanel();
+  });
+});
+</script>
+
+
+<!-- 멤버십 팝업 -->
+<div id="membership-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="background:#1a1a1a;border:1px solid #2e2e2e;border-radius:12px;max-width:400px;width:100%;padding:2.5rem 2rem;text-align:center;position:relative;">
+    <button onclick="document.getElementById('membership-overlay').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:#666;font-size:1.4rem;cursor:pointer;">×</button>
+    <div id="membership-icon" style="font-size:3rem;margin-bottom:1rem;">✨</div>
+    <div id="membership-title" style="font-family:'Noto Serif KR',serif;font-size:1.3rem;font-weight:700;color:#f0ece4;margin-bottom:0.7rem;"></div>
+    <div id="membership-desc" style="font-size:0.88rem;color:#888;line-height:1.8;margin-bottom:0.8rem;"></div>
+    <div id="membership-countdown" style="font-size:0.75rem;color:#555;margin-bottom:1.2rem;"></div>
+    <div style="display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;">
+      <button onclick="document.getElementById('membership-overlay').style.display='none'" style="background:transparent;border:1px solid #444;color:#888;padding:0.6rem 1.5rem;border-radius:2rem;font-size:0.85rem;font-family:inherit;cursor:pointer;">닫기</button>
+      <button onclick="document.getElementById('membership-overlay').style.display='none';" style="background:#e8c56d;border:none;color:#0e0e0e;padding:0.6rem 1.5rem;border-radius:2rem;font-size:0.85rem;font-weight:700;font-family:inherit;cursor:pointer;">확인</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- TMDB 출처 표기 -->
+<footer class="tmdb-footer">
+  <img class="tmdb-logo" src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB">
+  This product uses the TMDB API but is not endorsed or certified by TMDB.<br>
+  <a href="https://www.themoviedb.org" target="_blank" rel="noopener">themoviedb.org</a>
+</footer>
+
+
+<!-- 4컷 만화 오버레이 -->
+<div class="comic-overlay" id="comic-overlay">
+  <div class="comic-grid">
+    <div class="comic-panel" id="cp1">
+      <span class="comic-panel-num">1</span>
+      <div class="comic-char">🦦</div>
+      <div class="comic-bubble" id="cb1">오늘 뭐 볼지<br>고민이야?</div>
+    </div>
+    <div class="comic-panel" id="cp2">
+      <span class="comic-panel-num">2</span>
+      <div class="comic-char">🧠</div>
+      <div class="comic-bubble" id="cb2" style="border-radius:12px;position:relative;">잠깐,<br>MBTI 볼게!</div>
+      <div class="comic-mbti-tag" id="mbti-tag" style="margin-top:0.3rem"></div>
+    </div>
+    <div class="comic-panel" id="cp3">
+      <span class="comic-panel-num">3</span>
+      <div class="comic-char">💭</div>
+      <div class="comic-bubble" id="cb3">분석 중...</div>
+    </div>
+    <div class="comic-panel" id="cp4">
+      <span class="comic-panel-num">4</span>
+      <div class="comic-char">🎬</div>
+      <div class="comic-bubble" id="cb4">딱 맞는 거<br>찾아왔어!</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

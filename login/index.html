@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTT픽 — 로그인</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#141414;--border:#222;--text:#f0ece4;--muted:#666;--accent:#e8c56d;--accent2:#c49a3c;--error:#ff6b6b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-weight:300;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+.back{position:fixed;top:1.2rem;left:1.5rem;color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color 0.2s}
+.back:hover{color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2.5rem 2rem;width:100%;max-width:400px}
+.logo{font-family:'Noto Serif KR',serif;font-size:1.4rem;font-weight:700;color:var(--accent);text-align:center;margin-bottom:0.3rem}
+.subtitle{text-align:center;color:var(--muted);font-size:0.82rem;margin-bottom:2rem}
+.tabs{display:flex;border:1px solid var(--border);border-radius:8px;margin-bottom:2rem;overflow:hidden}
+.tab{flex:1;padding:0.7rem;text-align:center;font-size:0.85rem;font-family:inherit;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.tab.active{background:var(--accent);color:#0a0a0a;font-weight:700}
+.form-group{margin-bottom:1.2rem}
+.form-label{font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.4rem;letter-spacing:0.05em}
+.form-input{width:100%;background:#0e0e0e;border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:8px;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:#444}
+.submit-btn{width:100%;background:var(--accent);color:#0a0a0a;border:none;padding:0.85rem;border-radius:8px;font-size:0.95rem;font-weight:700;font-family:inherit;cursor:pointer;margin-top:0.5rem;transition:opacity 0.2s}
+.submit-btn:hover{opacity:0.85}
+.submit-btn:disabled{opacity:0.4;cursor:not-allowed}
+.divider{display:flex;align-items:center;gap:1rem;margin:1.5rem 0;color:#333;font-size:0.78rem}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.msg{font-size:0.8rem;text-align:center;margin-top:1rem;padding:0.6rem;border-radius:6px;display:none}
+.msg.error{background:rgba(255,107,107,0.1);color:var(--error);border:1px solid rgba(255,107,107,0.2);display:block}
+.msg.success{background:rgba(232,197,109,0.1);color:var(--accent);border:1px solid rgba(232,197,109,0.2);display:block}
+.loading-spinner{width:1rem;height:1rem;border:2px solid rgba(10,10,10,0.3);border-top-color:#0a0a0a;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle;margin-right:0.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<a class="back" href="../">← 홈으로</a>
+
+<div class="card">
+  <div class="logo">OTT픽</div>
+  <div class="subtitle">로그인하고 AI 추천을 무제한으로 즐겨보세요</div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-login" onclick="switchTab('login')">로그인</button>
+    <button class="tab" id="tab-signup" onclick="switchTab('signup')">회원가입</button>
+  </div>
+
+  <!-- 로그인 폼 -->
+  <div id="form-login">
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input class="form-input" id="login-email" type="email" placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호</label>
+      <input class="form-input" id="login-pw" type="password" placeholder="비밀번호 입력">
+    </div>
+    <button class="submit-btn" id="login-btn" onclick="handleLogin()">로그인</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+
+  <!-- 회원가입 폼 -->
+  <div id="form-signup" style="display:none;">
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input class="form-input" id="signup-email" type="email" placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호 (6자 이상)</label>
+      <input class="form-input" id="signup-pw" type="password" placeholder="비밀번호 입력">
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호 확인</label>
+      <input class="form-input" id="signup-pw2" type="password" placeholder="비밀번호 재입력">
+    </div>
+    <button class="submit-btn" id="signup-btn" onclick="handleSignup()">회원가입</button>
+    <div class="msg" id="signup-msg"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+const SUPABASE_URL = 'https://jgcnvdeenwsrlzezxhgs.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ENcf0-eZJnRQmdpMQiwe-w_Vpoma6Pp';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 이미 로그인 된 경우 앱으로 이동
+const { data: { session } } = await supabase.auth.getSession();
+if (session) location.href = '../app';
+
+window.switchTab = (tab) => {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
+};
+
+window.handleLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const btn = document.getElementById('login-btn');
+  const msg = document.getElementById('login-msg');
+
+  if (!email || !pw) { showMsg(msg, '이메일과 비밀번호를 입력해주세요.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>로그인 중...';
+  msg.className = 'msg';
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+
+  if (error) {
+    showMsg(msg, '이메일 또는 비밀번호가 올바르지 않아요.', 'error');
+    btn.disabled = false;
+    btn.textContent = '로그인';
+  } else {
+    showMsg(msg, '로그인 성공! 이동 중...', 'success');
+    setTimeout(() => location.href = '../app', 800);
+  }
+};
+
+window.handleSignup = async () => {
+  const email = document.getElementById('signup-email').value.trim();
+  const pw = document.getElementById('signup-pw').value;
+  const pw2 = document.getElementById('signup-pw2').value;
+  const btn = document.getElementById('signup-btn');
+  const msg = document.getElementById('signup-msg');
+
+  if (!email || !pw) { showMsg(msg, '이메일과 비밀번호를 입력해주세요.', 'error'); return; }
+  if (pw.length < 6) { showMsg(msg, '비밀번호는 6자 이상이어야 해요.', 'error'); return; }
+  if (pw !== pw2) { showMsg(msg, '비밀번호가 일치하지 않아요.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>가입 중...';
+  msg.className = 'msg';
+
+  const { error } = await supabase.auth.signUp({ email, password: pw });
+
+  if (error) {
+    showMsg(msg, error.message || '가입 중 오류가 발생했어요.', 'error');
+    btn.disabled = false;
+    btn.textContent = '회원가입';
+  } else {
+    showMsg(msg, '가입 완료! 이메일 인증 후 로그인해주세요.', 'success');
+    btn.textContent = '회원가입';
+    btn.disabled = false;
+  }
+};
+
+function showMsg(el, text, type) {
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+</script>
+</body>
+</html>
