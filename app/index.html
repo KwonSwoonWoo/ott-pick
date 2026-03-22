@@ -968,6 +968,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') closeCurationPanel();
   });
 });
+
+/* ====== Supabase 인증 초기화 ====== */
+window._isLoggedIn = false;
+window._supabase = null;
+
+(async () => {
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+    const sb = createClient(
+      'https://jgcnvdeenwsrlzezxhgs.supabase.co',
+      'sb_publishable_ENcf0-eZJnRQmdpMQiwe-w_Vpoma6Pp'
+    );
+    window._supabase = sb;
+    const { data: { session } } = await sb.auth.getSession();
+    const authBtn = document.getElementById('auth-btn');
+    const userEmail = document.getElementById('user-email');
+    if (session) {
+      window._isLoggedIn = true;
+      if (userEmail) userEmail.textContent = session.user.email;
+      if (authBtn) {
+        authBtn.textContent = '로그아웃';
+        authBtn.href = '#';
+        authBtn.onclick = async (e) => {
+          e.preventDefault();
+          await sb.auth.signOut();
+          window._isLoggedIn = false;
+          location.reload();
+        };
+      }
+    } else {
+      if (authBtn) authBtn.textContent = '로그인';
+    }
+  } catch(e) {
+    console.error('Supabase 오류:', e);
+  }
+})();
+
 </script>
 
 
