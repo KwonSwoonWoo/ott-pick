@@ -2,42 +2,36 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const { title, year, type, genre, hook, moods, contexts, times, spoiler } = req.body;
+  const { title, year, type, genre } = req.body;
 
-  const prompt = spoiler
-    ? `"${title} (${year||''})"에 대해 웹 검색 후 스포일러를 포함한 깊은 감상문을 써주세요.
+  const prompt = `당신은 감각적인 OTT 콘텐츠 블로거입니다.
+"${title} (${year || ''})"에 대해 웹 검색을 바탕으로, 스포일러 없이 블로그 글처럼 감상문을 작성해주세요.
+
+조건:
+- 총 1000자 내외
+- 스포일러 절대 금지 (결말, 반전, 핵심 장면 언급 금지)
+- 한국어 존댓말
+- URL, 출처 링크 금지
+- 마크다운 기호 금지 (**, ## 등)
+- 단락 사이 빈 줄 한 줄씩 넣기
+- 자연스러운 블로그 글체 (딱딱하지 않게)
 
 다음 구조로 작성하세요:
 
-[핵심 스포일러 요약] 주요 반전, 결말, 핵심 장면 2~3문장
+[작품 소개]
+이 작품이 어떤 작품인지 2~3문장으로 소개
 
-[인상적인 장면] 가장 화제가 된 장면이나 대사 2~3문장
+[분위기와 매력]
+작품의 전반적인 분위기, 연출, 음악, 배우 연기 등 2~3문장
 
-[작품이 말하고 싶은 것] 주제의식, 메시지 2~3문장
+[이런 분께 추천해요]
+어떤 상황, 어떤 취향의 사람에게 잘 맞는지 2~3문장
 
-조건: 한국어 존댓말, URL 금지, 마크다운 금지, 단락 사이 빈 줄`
-
-    : `당신은 한국 OTT 큐레이터입니다. "${title} (${year||''})"에 대해 웹 검색을 바탕으로,
-사용자가 "지금 바로 볼지" 결정할 수 있게, 스포일러 없이 아주 간결하고 매력적으로 작성하세요.
-
-사용자 맥락:
-- 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
-- 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
-- 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-
-아래 형식 그대로, 한국어 존댓말, URL/출처 링크 금지, 스포일러 금지:
-
-[30초 요약] 3~4문장
-
-[왜 지금 보기 좋아요] 2문장
-
-[이런 분께 추천] 3개 불릿(•)
-
-[비슷한 작품 1개] 제목 + 한 줄 이유`;
+[한 줄 총평]
+작품을 한 문장으로 압축한 총평`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
@@ -47,22 +41,19 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.4-nano',
         tools: [{ type: 'web_search_preview' }],
         input: prompt,
-        max_output_tokens: 650,
+        max_output_tokens: 1200,
       }),
     });
-
     if (!response.ok) {
       const err = await response.json();
       return res.status(response.status).json(err);
     }
-
     const data = await response.json();
     const msg = (data.output || []).find(o => o.type === 'message');
     const text = msg?.content?.find(c => c.type === 'output_text')?.text || '';
-
     return res.status(200).json({ text });
   } catch (err) {
     return res.status(500).json({ error: err.message });
