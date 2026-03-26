@@ -21,6 +21,10 @@ export default async function handler(req, res) {
     : '';
   const prompt = `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 사용자의 "오늘 상황"까지 고려해서, 지금 바로 고르기 쉬운 추천 5개를 제안하세요.
+
+중요: 각 작품마다 반드시 웹 검색으로 실제 줄거리, 분위기, 주요 장면, 시청자 반응을 확인한 뒤 작성하세요.
+추측으로 작성하지 말고, 실제 작품 내용에 기반해서 hook과 reason을 써야 합니다.
+
 사용자 취향:
 - 보유 OTT: ${otts?.length ? otts.join(', ') : '상관없음'}
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
@@ -28,6 +32,7 @@ export default async function handler(req, res) {
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
 - 추가 요청: ${extra || '없음'}${mbtiDesc}
+
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -36,8 +41,8 @@ export default async function handler(req, res) {
     "year": "연도",
     "type": "movie 또는 tv",
     "genre": "장르",
-    "hook": "스포일러 없는 한 줄 추천사(20자 내외)",
-    "reason": "왜 지금 이 상황에 딱인지 2~3문장(구체적으로)."
+    "hook": "웹 검색으로 확인한 실제 작품 분위기·내용을 바탕으로, 제목과 포스터에 딱 맞는 한 줄 추천사(20자 내외)",
+    "reason": "웹 검색으로 확인한 실제 내용을 바탕으로, 왜 지금 이 사용자 상황에 딱인지 2~3문장(구체적으로)."
   }
 ]`;
   try {
