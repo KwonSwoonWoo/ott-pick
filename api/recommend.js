@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5.4-nano',
+        model: 'gpt-4o-mini',
         tools: [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 1500,
