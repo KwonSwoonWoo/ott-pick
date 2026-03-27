@@ -21,19 +21,19 @@ export default async function handler(req, res) {
     : '';
   const prompt = `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 사용자의 "오늘 상황"까지 고려해서, 지금 바로 고르기 쉬운 추천 5개를 제안하세요.
- 
+
 [제목 규칙 - 반드시 준수]
 - 웹 검색으로 TMDB(themoviedb.org) 또는 해당 OTT 플랫폼에서 실제 존재하는 작품인지 반드시 확인하세요.
 - title(한국어): 한국 OTT 또는 TMDB에서 공식적으로 사용하는 정확한 한국어 제목을 사용하세요. 임의로 번역하거나 축약하지 마세요.
 - title_en(영어): TMDB에서 검색 가능한 정확한 영어 원제를 사용하세요. 철자가 틀리지 않도록 웹 검색으로 확인하세요.
 - 제목이 확실하지 않거나 존재 여부가 불분명한 작품은 추천하지 마세요.
 - 보유 OTT에 명시된 플랫폼에서 실제로 서비스 중인 작품만 추천하세요.
- 
+
 [콘텐츠 규칙]
 - 각 작품마다 반드시 웹 검색으로 실제 줄거리, 분위기, 주요 장면, 시청자 반응을 확인한 뒤 작성하세요.
 - 추측으로 작성하지 말고, 실제 작품 내용에 기반해서 hook과 reason을 써야 합니다.
 - reason에 URL이나 링크를 포함하지 마세요.
- 
+
 사용자 취향:
 - 보유 OTT: ${otts?.length ? otts.join(', ') : '상관없음'}
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
 - 추가 요청: ${extra || '없음'}${mbtiDesc}
- 
+
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         model: 'gpt-4o-mini',
         tools: [{ type: 'web_search_preview' }],
         input: prompt,
-        max_output_tokens: 1500,
+        max_output_tokens: 3000,
       }),
     });
     if (!response.ok) {
