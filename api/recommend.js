@@ -86,7 +86,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "genre": "장르",
     "source": "후보 목록의 source 그대로 (laftel 또는 tmdb)",
     "hook": "${HOOK_INSTRUCTION}",
-    "reason": "왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
+    "reason": "반드시 실제 등장인물 이름을 언급하면서, 왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
   }
 ]`
     : `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
@@ -132,7 +132,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "genre": "장르",
     "source": "tmdb",
     "hook": "${HOOK_INSTRUCTION}",
-    "reason": "왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
+    "reason": "반드시 실제 등장인물 이름을 언급하면서, 왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
   }
 ]`;
 
