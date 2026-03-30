@@ -153,6 +153,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     });
     if (!response.ok) {
       const err = await response.json();
+      console.error('openai error:', JSON.stringify(err));
       return res.status(response.status).json(err);
     }
     const data = await response.json();
@@ -163,6 +164,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     const recs = JSON.parse(jsonMatch[0]);
     return res.status(200).json(recs);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('recommend error:', JSON.stringify(err), err.stack);
+    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
