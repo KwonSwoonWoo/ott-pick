@@ -147,7 +147,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-nano',
         tools: hasCandidates ? [] : [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 3000,
