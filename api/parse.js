@@ -33,7 +33,11 @@ keywords_en 작성 기준:
 - "귀멸의 칼날 같은 분위기" → genres: ["액션","판타지","성장"], moods: ["긴장되는","무거운"], keywords: ["귀멸의 칼날","액션","판타지","성장","모험"], keywords_en: ["demon slayer","sword","supernatural"]
 - "로봇 영화" → genres: ["SF","액션"], moods: ["신나는"], keywords: ["로봇","SF"], keywords_en: ["robot","mecha","android"]
 - "어제 오징어게임 봤어" → genres: ["스릴러","드라마"], moods: ["긴장되는"], keywords: ["서바이벌","스릴러","무거움"], keywords_en: ["survival","thriller","game"]
+- "오은영" → genres: ["다큐","드라마"], moods: ["감동적인","편안한"], keywords: ["육아","심리","치유","가족"], keywords_en: ["parenting","psychology","documentary","family"]
+- "유재석" → genres: ["개그","코미디"], moods: ["가벼운","신나는"], keywords: ["예능","코미디","유머"], keywords_en: ["variety show","comedy","entertainment"]
+- "봉준호" → genres: ["스릴러","드라마"], moods: ["무거운","긴장되는"], keywords: ["사회비판","스릴러","한국영화"], keywords_en: ["social commentary","thriller","korean film"]
 - 특정 작품 언급 시 keywords에 작품명 반드시 포함
+- 실존 인물명 언급 시 그 인물과 연관된 테마/장르로 변환 (예: 오은영→육아,심리,다큐, 유재석→예능,코미디, 봉준호→드라마,스릴러, BTS→K-pop,음악,아이돌)
 - JSON만 반환, 다른 텍스트 없이
 예시 입력: 기분이 우울해
 예시 출력:
