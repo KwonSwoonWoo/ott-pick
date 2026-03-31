@@ -51,9 +51,9 @@ export default async function handler(req, res) {
 사용자 취향을 분석해서 이 목록 중 가장 잘 맞는 5개를 골라 추천하세요.
 
 [규칙 - 절대 준수]
-- 반드시 아래 후보 목록에 있는 작품만 선택하세요. 목록에 없는 작품은 절대 추가하지 마세요.
-- title과 title_en은 후보 목록의 값을 그대로 사용하세요. 수정하지 마세요.
-- source도 후보 목록의 값을 그대로 사용하세요.
+- 후보 목록을 우선 참고하되, 사용자 요청에 더 잘 맞는 작품이 있으면 목록 외 작품도 추천 가능합니다.
+- 목록 외 작품 추천 시 웹 검색으로 실제 존재 여부와 해당 OTT 서비스 여부를 반드시 확인하세요.
+- 목록 외 작품의 source는 "tmdb"로 설정하세요.
 - hook과 reason만 창의적으로 작성하세요.
 - reason에 URL이나 링크를 포함하지 마세요.${ottRatioDesc}
 
@@ -145,7 +145,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
       },
       body: JSON.stringify({
         model: 'gpt-4.1-mini',
-        tools: (!extra || (candidates && candidates.length < 10)) ? [{ type: 'web_search_preview' }] : [],
+        tools: [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 3000,
         temperature: 0.7,
