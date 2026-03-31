@@ -164,6 +164,9 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
       return res.status(response.status).json(err);
     }
     const data = await response.json();
+    // 웹 검색 실행 여부 로깅
+    const searchCalls = (data.output || []).filter(o => o.type === 'web_search_call');
+    console.log('web_search_calls:', searchCalls.length, JSON.stringify(searchCalls.map(s => s.query)));
     const msg = (data.output || []).find(o => o.type === 'message');
     const text = msg?.content?.find(c => c.type === 'output_text')?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
