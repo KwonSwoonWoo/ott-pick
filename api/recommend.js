@@ -92,7 +92,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
 - 추가 요청이 있으면 반드시 웹 검색으로 관련 작품을 찾으세요.
-- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작" 또는 "[인물명] filmography"로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
+- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작 넷플릭스" 또는 "[인물명] 드라마 영화 OTT" 형태로 한국어로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
 - 인물명 언급 시 (예: 오은영, 유재석, 봉준호) → "[인물명] 출연 프로그램" 또는 "[인물명] 드라마 영화"로 웹 검색해서 실제 출연작을 찾으세요.
 - 장르/소재 언급 시 (예: 로봇, 추리물) → 반드시 영어로 "[소재 영어] movies [OTT명] Korea 2024" 형태로 검색하세요. (예: "robot movies Netflix Korea 2024", "mystery thriller Netflix Korea")
 - "~같은 분위기", "~처럼", "~같은 거" → 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 웹 검색으로 찾으세요.
@@ -142,7 +142,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
 - 추가 요청이 있으면 반드시 웹 검색으로 관련 작품을 찾으세요.
-- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작" 또는 "[인물명] filmography"로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
+- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작 넷플릭스" 또는 "[인물명] 드라마 영화 OTT" 형태로 한국어로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
 - 인물명 언급 시 (예: 오은영, 유재석, 봉준호) → "[인물명] 출연 프로그램" 또는 "[인물명] 드라마 영화"로 웹 검색해서 실제 출연작을 찾으세요.
 - 장르/소재 언급 시 (예: 로봇, 추리물) → 반드시 영어로 "[소재 영어] movies [OTT명] Korea 2024" 형태로 검색하세요. (예: "robot movies Netflix Korea 2024", "mystery thriller Netflix Korea")
 - "~같은 분위기", "~처럼", "~같은 거" → 해당 작품과 유사한 작품을 웹 검색으로 찾으세요.
@@ -183,7 +183,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
       },
       body: JSON.stringify({
         model: 'gpt-4.1-mini',
-        tools: personInstruction ? [] : [{ type: 'web_search_preview' }],
+        tools: [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 3000,
         temperature: 0.7,
