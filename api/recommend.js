@@ -23,6 +23,38 @@ export default async function handler(req, res) {
     : '';
 
   const hasCandidates = !extra && candidates && candidates.length > 0;
+
+  // 네이버 검색으로 인물 출연작 조회
+  let personWorks = '';
+  if (persons && persons.length > 0) {
+    try {
+      const searchResults = await Promise.all(persons.map(async (person) => {
+        const query = encodeURIComponent(`${person} 출연 드라마 영화`);
+        const r = await fetch(`https://openapi.naver.com/v1/search/webkr.json?query=${query}&display=5`, {
+          headers: {
+            'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID,
+            'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET,
+          },
+        });
+        if (!r.ok) return '';
+        const d = await r.json();
+        const titles = (d.items || []).map(item =>
+          item.title.replace(/<[^>]+>/g, '').trim()
+        ).join(', ');
+        return `${person} 관련 검색 결과: ${titles}`;
+      }));
+      personWorks = searchResults.filter(Boolean).join('
+');
+    } catch (e) {
+      console.error('naver search error:', e);
+    }
+  }
+  const personInstruction = personWorks
+    ? `
+[인물 출연작 검색 결과 - 반드시 이 목록 기반으로 추천]
+${personWorks}
+위 검색 결과에 나온 실제 작품만 추천하세요. 검색 결과에 없는 작품은 절대 추천하지 마세요.`
+    : '';
   const animeInstruction = isAnimeMode ? "\n[중요] 사용자가 애니메이션을 원합니다. 반드시 5개 모두 애니메이션 작품으로 추천하세요." : "";
 
   const HOOK_INSTRUCTION = `이 작품에서만 나올 수 있는 구체적인 한 줄(20자 내외). 반드시 아래 스타일 중 하나를 골라 쓸 것 — [역설] 예: 살인마가 유일하게 지키려는 건 그 아이였다, [상황 충격] 예: 복수하러 갔더니 그게 내 친아버지였다, [감정 직격] 예: 10년째 같은 자리에서 그를 기다리는 여자, [의문 유도] 예: 범인은 처음부터 우리가 알던 그 사람이었을까, [아이러니] 예: 세상을 구한 영웅이 정작 자기 가족은 못 지켰다. 절대 금지: 다양한 갈등, 더욱 강력한, 감동적인 이야기, 예상치 못한 반전 — 이런 추상 명사·형용사 조합 전면 금지. 반드시 이 작품에만 해당하는 고유한 인물·사건·감정을 담을 것.`;
@@ -79,7 +111,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${personInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
@@ -130,7 +162,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${personInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
