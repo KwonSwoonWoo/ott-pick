@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const { otts, genres, moods, times, contexts, extra, mbti, age, candidates, isAnimeMode, persons } = req.body;
+  const { otts, genres, moods, contentType, contexts, extra, mbti, age, candidates, isAnimeMode, persons } = req.body;
 
   const MBTI_DESC = {
     'ENFP': 'ENFP: 열정적이고 창의적인 성격. 감성적인 인간관계 서사와 예상치 못한 반전을 즐김. 다양한 캐릭터가 등장하는 앙상블 드라마, 판타지·로맨스·성장물을 선호. 틀에 박힌 전개보다 독특하고 신선한 설정을 좋아함.',
@@ -23,6 +23,9 @@ export default async function handler(req, res) {
     : '';
 
   const hasCandidates = !extra && candidates && candidates.length > 0;
+  const contentTypeInstruction = contentType
+    ? `\n[콘텐츠 유형 - 반드시 준수] 사용자가 "${contentType}"을 선택했습니다. 반드시 ${contentType === '영화' ? 'type이 "movie"인 영화' : 'type이 "tv"인 시리즈/드라마'}만 추천하세요.`
+    : '';
   const animeInstruction = isAnimeMode ? "\n[중요] 사용자가 애니메이션을 원합니다. 반드시 5개 모두 애니메이션 작품으로 추천하세요." : "";
   const ageInstruction = age
     ? `\n[연령 제한 - 반드시 준수] 사용자가 선택한 관람 연령: ${age}. 이 연령 기준을 초과하는 작품(폭력, 선정성, 공포 등 성인 콘텐츠)은 절대 추천하지 마세요. ${age} 이하 관람 가능한 작품만 추천하세요.`
@@ -109,8 +112,8 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
-- 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${ageInstruction}${personInstruction}
+- 콘텐츠 유형: ${contentType || '상관없음'}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}${ageInstruction}${personInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
@@ -160,8 +163,8 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
-- 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${ageInstruction}${personInstruction}
+- 콘텐츠 유형: ${contentType || '상관없음'}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}${ageInstruction}${personInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
