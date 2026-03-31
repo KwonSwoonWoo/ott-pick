@@ -30,8 +30,9 @@ export default async function handler(req, res) {
   if (persons && persons.length > 0) {
     try {
       const searchResults = await Promise.all(persons.map(async (person) => {
-        const query = encodeURIComponent(`${person} 출연 드라마 영화`);
-        const r = await fetch(`https://openapi.naver.com/v1/search/webkr.json?query=${query}&display=5`, {
+        const ottNames = (otts || []).join(' ');
+        const query = encodeURIComponent(`${person} 출연 ${ottNames || '드라마 영화'}`);
+        const r = await fetch(`https://openapi.naver.com/v1/search/vclip.json?query=${query}&display=10`, {
           headers: {
             'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID,
             'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET,
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
       }));
       const personWorks = searchResults.filter(Boolean).join('\n');
       if (personWorks) {
-        personInstruction = `\n[인물 출연작 검색 결과 - 반드시 이 목록 기반으로 추천]\n${personWorks}\n위 검색 결과에 나온 실제 작품만 추천하세요. 검색 결과에 없는 작품은 절대 추천하지 마세요.`;
+        personInstruction = `\n[인물 출연작 검색 결과 - 반드시 이 목록 기반으로 추천]\n${personWorks}\n주의: 위 검색 결과에서 실제 드라마/영화/방송 프로그램 제목만 추출해서 추천하세요. 기사 제목이나 블로그 제목은 작품이 아니므로 무시하세요. 추출한 실제 작품 중 보유 OTT에서 서비스 중인 것만 추천하세요.`;
       }
     } catch (e) {
       console.error('naver search error:', e);
