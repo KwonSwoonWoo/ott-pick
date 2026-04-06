@@ -4,9 +4,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
- 
+
   const { otts, genres, moods, times, contexts, extra, mbti, candidates, isAnimeMode } = req.body;
- 
+
   const MBTI_DESC = {
     'ENFP': 'ENFP: 열정적이고 창의적인 성격. 감성적인 인간관계 서사와 예상치 못한 반전을 즐김. 다양한 캐릭터가 등장하는 앙상블 드라마, 판타지·로맨스·성장물을 선호. 틀에 박힌 전개보다 독특하고 신선한 설정을 좋아함.',
     'ESFJ': 'ESFJ: 따뜻하고 사교적인 성격. 가족·우정·사랑을 중심으로 한 감동적인 이야기를 선호. 해피엔딩이 있는 로맨스, 가족 드라마, 실화 기반 감동 스토리를 좋아함. 잔인하거나 어두운 콘텐츠는 피하는 경향.',
@@ -21,17 +21,17 @@ export default async function handler(req, res) {
   const mbtiDesc = mbti?.length
     ? '\nMBTI 유형: ' + mbti.map(m => MBTI_DESC[m] || m).join(', ')
     : '';
- 
+
   const hasCandidates = candidates && candidates.length > 0;
   const animeInstruction = isAnimeMode ? "\n[중요] 사용자가 애니메이션을 원합니다. 반드시 5개 모두 애니메이션 작품으로 추천하세요." : "";
- 
+
   // OTT별 후보 수 계산 및 목표 비율 생성
   let ottRatioDesc = '';
   if (hasCandidates) {
     const laftelCount = candidates.filter(c => c.source === 'laftel').length;
     const tmdbCount = candidates.filter(c => c.source === 'tmdb').length;
     const total = laftelCount + tmdbCount;
- 
+
     if (laftelCount > 0 && tmdbCount > 0) {
       // 둘 다 있으면 비율에 맞게 배분
       const laftelTarget = Math.round(5 * laftelCount / total);
@@ -43,12 +43,12 @@ export default async function handler(req, res) {
       ottRatioDesc = '\n[OTT별 추천 비율]\n- source가 "tmdb"인 작품: 5개';
     }
   }
- 
+
   const prompt = hasCandidates
     ? `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 아래 후보 목록은 사용자가 보유한 OTT에서 실제 서비스 중인 작품들입니다.
 사용자 취향을 분석해서 이 목록 중 가장 잘 맞는 5개를 골라 추천하세요.
- 
+
 [규칙 - 절대 준수]
 - 반드시 아래 후보 목록에 있는 작품만 선택하세요. 목록에 없는 작품은 절대 추가하지 마세요.
 - title과 title_en은 후보 목록의 값을 그대로 사용하세요. 수정하지 마세요.
@@ -56,10 +56,10 @@ export default async function handler(req, res) {
 - hook과 reason만 창의적으로 작성하세요.
 - reason에 URL이나 링크를 포함하지 마세요.
 - reason에 URL이나 링크를 포함하지 마세요.${ottRatioDesc}
- 
+
 [후보 작품 목록]
 ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_en || ''}", genre: "${c.genre || ''}", source: "${c.source}"${c.content ? ', description: "' + c.content.slice(0, 100).replace(/"/g, "'") + '..."' : ''}`).join('\n')}
- 
+
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
 - "~같은 분위기", "~처럼", "~같은 거" → 반드시 후보 목록의 description을 하나씩 읽고, 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 선별하세요. 장르 태그만 보지 말고 description을 적극 활용하세요.
@@ -68,14 +68,14 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 현재 상황 설명 → 상황에 어울리는 작품 추천
 - 피하고 싶은 것 언급 → 해당 요소 배제
 추가 요청은 장르·분위기 칩 선택과 동등하게 반영하세요. description이 있는 경우 반드시 읽고 분위기 유사도를 판단하세요.
- 
+
 사용자 취향:
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
 - 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
- 
+
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -92,23 +92,23 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 ]`
     : `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 사용자의 "오늘 상황"까지 고려해서, 지금 바로 고르기 쉬운 추천 5개를 제안하세요.
- 
+
 [가장 중요한 규칙 - 절대 위반 금지]
 - 작품을 추천하기 전 반드시 웹 검색으로 해당 작품이 실제로 존재하는지 먼저 확인하세요.
 - 검색으로 확인되지 않은 작품은 절대 추천하지 마세요.
 - 제목을 지어내거나 추측으로 작성하는 것은 절대 금지입니다.
 - 확신이 없으면 추천하지 말고, 대신 널리 알려진 검증된 인기작을 추천하세요.
 - 5개를 채우기 위해 불확실한 작품을 넣지 마세요.
- 
+
 [제목 규칙]
 - title(한국어): TMDB 또는 해당 OTT 공식 한국어 제목을 사용하세요.
 - title_en(영어): TMDB에서 검색 가능한 정확한 영어 원제를 사용하세요.
 - 보유 OTT에서 실제로 서비스 중인 작품만 추천하세요.
- 
+
 [콘텐츠 규칙]
 - 각 작품마다 반드시 웹 검색으로 실제 내용을 확인한 뒤 작성하세요.
 - reason에 URL이나 링크를 포함하지 마세요.
- 
+
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
 - "~같은 분위기", "~처럼", "~같은 거" → 반드시 후보 목록의 description을 하나씩 읽고, 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 선별하세요. 장르 태그만 보지 말고 description을 적극 활용하세요.
@@ -117,7 +117,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 현재 상황 설명 → 상황에 어울리는 작품 추천
 - 피하고 싶은 것 언급 → 해당 요소 배제
 추가 요청은 장르·분위기 칩 선택과 동등하게 반영하세요. description이 있는 경우 반드시 읽고 분위기 유사도를 판단하세요.
- 
+
 사용자 취향:
 - 보유 OTT: ${otts?.length ? otts.join(', ') : '상관없음'}
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
@@ -125,7 +125,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
 - 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
- 
+
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -140,7 +140,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "poster_url": "TMDB 포스터 이미지 URL (https://image.tmdb.org/t/p/w500/... 형식). 웹 검색으로 TMDB에서 정확한 poster_path를 찾아서 완성된 URL로 반환. TMDB에 없으면 null."
   }
 ]`;
- 
+
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -150,7 +150,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        tools: hasCandidates ? [] : [{ type: 'web_search_preview' }],
+        tools: [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 3000,
       }),
