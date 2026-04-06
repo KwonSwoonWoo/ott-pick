@@ -4,9 +4,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-
-  const { otts, genres, moods, contentType, contexts, extra, mbti, age, candidates, isAnimeMode, persons } = req.body;
-
+ 
+  const { otts, genres, moods, times, contexts, extra, mbti, candidates, isAnimeMode } = req.body;
+ 
   const MBTI_DESC = {
     'ENFP': 'ENFP: 열정적이고 창의적인 성격. 감성적인 인간관계 서사와 예상치 못한 반전을 즐김. 다양한 캐릭터가 등장하는 앙상블 드라마, 판타지·로맨스·성장물을 선호. 틀에 박힌 전개보다 독특하고 신선한 설정을 좋아함.',
     'ESFJ': 'ESFJ: 따뜻하고 사교적인 성격. 가족·우정·사랑을 중심으로 한 감동적인 이야기를 선호. 해피엔딩이 있는 로맨스, 가족 드라마, 실화 기반 감동 스토리를 좋아함. 잔인하거나 어두운 콘텐츠는 피하는 경향.',
@@ -21,54 +21,19 @@ export default async function handler(req, res) {
   const mbtiDesc = mbti?.length
     ? '\nMBTI 유형: ' + mbti.map(m => MBTI_DESC[m] || m).join(', ')
     : '';
-
-  const hasCandidates = !extra && candidates && candidates.length > 0;
-  const contentTypeInstruction = contentType
-    ? `\n[콘텐츠 유형 - 반드시 준수] 사용자가 "${contentType}"을 선택했습니다. 반드시 ${contentType === '영화' ? 'type이 "movie"인 영화' : 'type이 "tv"인 시리즈/드라마'}만 추천하세요.`
-    : '';
+ 
+  const hasCandidates = candidates && candidates.length > 0;
   const animeInstruction = isAnimeMode ? "\n[중요] 사용자가 애니메이션을 원합니다. 반드시 5개 모두 애니메이션 작품으로 추천하세요." : "";
-  const ageInstruction = age
-    ? `\n[연령 제한 - 반드시 준수] 사용자가 선택한 관람 연령: ${age}. 이 연령 기준을 초과하는 작품(폭력, 선정성, 공포 등 성인 콘텐츠)은 절대 추천하지 마세요. ${age} 이하 관람 가능한 작품만 추천하세요.`
-    : '';
-
-  // 네이버 검색으로 인물 출연작 조회
-  let personInstruction = '';
-  if (persons && persons.length > 0) {
-    try {
-      const searchResults = await Promise.all(persons.map(async (person) => {
-        const ottNames = (otts || []).join(' ');
-        const query = encodeURIComponent(`${person} 출연 ${ottNames || '드라마 영화'}`);
-        const r = await fetch(`https://openapi.naver.com/v1/search/vclip.json?query=${query}&display=10`, {
-          headers: {
-            'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID,
-            'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET,
-          },
-        });
-        if (!r.ok) return '';
-        const d = await r.json();
-        const titles = (d.items || []).map(item =>
-          item.title.replace(/<[^>]+>/g, '').trim()
-        ).join(', ');
-        return `${person} 관련 검색 결과: ${titles}`;
-      }));
-      const personWorks = searchResults.filter(Boolean).join('\n');
-      if (personWorks) {
-        personInstruction = `\n[인물 출연작 검색 결과 - 반드시 이 목록 기반으로 추천]\n${personWorks}\n주의: 위 검색 결과에서 실제 드라마/영화/방송 프로그램 제목만 추출해서 추천하세요. 기사 제목이나 블로그 제목은 작품이 아니므로 무시하세요. 추출한 실제 작품 중 보유 OTT에서 서비스 중인 것만 추천하세요.`;
-      }
-    } catch (e) {
-      console.error('naver search error:', e);
-    }
-  }
-
-  const HOOK_INSTRUCTION = `이 작품에서만 나올 수 있는 구체적인 한 줄(20자 내외). 반드시 아래 스타일 중 하나를 골라 쓸 것 — [역설] 예: 살인마가 유일하게 지키려는 건 그 아이였다, [상황 충격] 예: 복수하러 갔더니 그게 내 친아버지였다, [감정 직격] 예: 10년째 같은 자리에서 그를 기다리는 여자, [의문 유도] 예: 범인은 처음부터 우리가 알던 그 사람이었을까, [아이러니] 예: 세상을 구한 영웅이 정작 자기 가족은 못 지켰다. 절대 금지: 다양한 갈등, 더욱 강력한, 감동적인 이야기, 예상치 못한 반전 — 이런 추상 명사·형용사 조합 전면 금지. 반드시 이 작품에만 해당하는 고유한 인물·사건·감정을 담을 것.`;
-
+ 
   // OTT별 후보 수 계산 및 목표 비율 생성
   let ottRatioDesc = '';
   if (hasCandidates) {
     const laftelCount = candidates.filter(c => c.source === 'laftel').length;
     const tmdbCount = candidates.filter(c => c.source === 'tmdb').length;
     const total = laftelCount + tmdbCount;
+ 
     if (laftelCount > 0 && tmdbCount > 0) {
+      // 둘 다 있으면 비율에 맞게 배분
       const laftelTarget = Math.round(5 * laftelCount / total);
       const tmdbTarget = 5 - laftelTarget;
       ottRatioDesc = `\n[OTT별 추천 비율 - 반드시 준수]\n- source가 "laftel"인 작품: 정확히 ${laftelTarget}개\n- source가 "tmdb"인 작품: 정확히 ${tmdbTarget}개`;
@@ -78,43 +43,39 @@ export default async function handler(req, res) {
       ottRatioDesc = '\n[OTT별 추천 비율]\n- source가 "tmdb"인 작품: 5개';
     }
   }
-
+ 
   const prompt = hasCandidates
     ? `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 아래 후보 목록은 사용자가 보유한 OTT에서 실제 서비스 중인 작품들입니다.
 사용자 취향을 분석해서 이 목록 중 가장 잘 맞는 5개를 골라 추천하세요.
-
+ 
 [규칙 - 절대 준수]
-- 후보 목록을 우선 참고하되, 사용자 추가 요청(extra)에 맞지 않는 후보는 과감히 제외하세요.
-- 후보 목록만으로 5개를 채우기 어렵거나 더 잘 맞는 작품이 있으면 웹 검색으로 찾아 추가하세요.
-- 웹 검색으로 추가할 경우 해당 OTT에서 실제 서비스 중인지 반드시 확인하세요.
-- 목록 외 작품의 source는 "tmdb"로 설정하세요.
+- 반드시 아래 후보 목록에 있는 작품만 선택하세요. 목록에 없는 작품은 절대 추가하지 마세요.
+- title과 title_en은 후보 목록의 값을 그대로 사용하세요. 수정하지 마세요.
+- source도 후보 목록의 값을 그대로 사용하세요.
 - hook과 reason만 창의적으로 작성하세요.
+- reason에 URL이나 링크를 포함하지 마세요.
 - reason에 URL이나 링크를 포함하지 마세요.${ottRatioDesc}
-
+ 
 [후보 작품 목록]
 ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_en || ''}", genre: "${c.genre || ''}", source: "${c.source}"${c.content ? ', description: "' + c.content.slice(0, 100).replace(/"/g, "'") + '..."' : ''}`).join('\n')}
-
+ 
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
-- 추가 요청이 있으면 반드시 웹 검색으로 관련 작품을 찾으세요.
-- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작 넷플릭스" 또는 "[인물명] 드라마 영화 OTT" 형태로 한국어로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
-- 인물명 언급 시 (예: 오은영, 유재석, 봉준호) → "[인물명] 출연 프로그램" 또는 "[인물명] 드라마 영화"로 웹 검색해서 실제 출연작을 찾으세요.
-- 장르/소재 언급 시 (예: 로봇, 추리물) → 반드시 영어로 "[소재 영어] movies [OTT명] Korea 2024" 형태로 검색하세요. (예: "robot movies Netflix Korea 2024", "mystery thriller Netflix Korea")
-- "~같은 분위기", "~처럼", "~같은 거" → 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 웹 검색으로 찾으세요.
+- "~같은 분위기", "~처럼", "~같은 거" → 반드시 후보 목록의 description을 하나씩 읽고, 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 선별하세요. 장르 태그만 보지 말고 description을 적극 활용하세요.
 - 이미 본 작품 언급 → 해당 작품과 비슷하지만 다른 작품 추천
 - 감정/기분 표현 → 그 감정에 맞는 작품 추천
 - 현재 상황 설명 → 상황에 어울리는 작품 추천
 - 피하고 싶은 것 언급 → 해당 요소 배제
-추가 요청은 장르·분위기 칩 선택보다 우선순위가 높습니다. 반드시 추가 요청 키워드에 맞는 작품을 찾아 추천하세요.
-
+추가 요청은 장르·분위기 칩 선택과 동등하게 반영하세요. description이 있는 경우 반드시 읽고 분위기 유사도를 판단하세요.
+ 
 사용자 취향:
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
-- 콘텐츠 유형: ${contentType || '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}${ageInstruction}${personInstruction}
-
+- 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+ 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -124,48 +85,47 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "type": "movie 또는 tv",
     "genre": "장르",
     "source": "후보 목록의 source 그대로 (laftel 또는 tmdb)",
-    "hook": "${HOOK_INSTRUCTION}",
-    "reason": "반드시 실제 등장인물 이름을 언급하면서, 왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
+    "hook": "작품의 핵심 장면·감정·상황을 구체적으로 담은 한 줄 추천사(20자 내외). 좋은 예: 죽은 줄 알았던 아버지가 적으로 돌아왔다, 첫사랑과 10년 만에 같은 회사에서 재회. 나쁜 예(금지): 다양한 갈등, 더욱 강력한 적들, 감동적인 이야기 - 이런 추상적 표현 절대 금지.",
+    "reason": "왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지.",
+    "poster_url": "TMDB 포스터 이미지 URL (https://image.tmdb.org/t/p/w500/... 형식). 웹 검색으로 TMDB에서 정확한 poster_path를 찾아서 완성된 URL로 반환. TMDB에 없으면 null."
   }
 ]`
     : `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
 사용자의 "오늘 상황"까지 고려해서, 지금 바로 고르기 쉬운 추천 5개를 제안하세요.
-
+ 
 [가장 중요한 규칙 - 절대 위반 금지]
+- 작품을 추천하기 전 반드시 웹 검색으로 해당 작품이 실제로 존재하는지 먼저 확인하세요.
+- 검색으로 확인되지 않은 작품은 절대 추천하지 마세요.
 - 제목을 지어내거나 추측으로 작성하는 것은 절대 금지입니다.
-- 반드시 웹 검색으로 작품의 정확한 제목을 확인한 뒤 작성하세요. 기억에 의존하지 마세요.
 - 확신이 없으면 추천하지 말고, 대신 널리 알려진 검증된 인기작을 추천하세요.
 - 5개를 채우기 위해 불확실한 작품을 넣지 마세요.
-
+ 
 [제목 규칙]
 - title(한국어): TMDB 또는 해당 OTT 공식 한국어 제목을 사용하세요.
 - title_en(영어): TMDB에서 검색 가능한 정확한 영어 원제를 사용하세요.
 - 보유 OTT에서 실제로 서비스 중인 작품만 추천하세요.
-
+ 
 [콘텐츠 규칙]
+- 각 작품마다 반드시 웹 검색으로 실제 내용을 확인한 뒤 작성하세요.
 - reason에 URL이나 링크를 포함하지 마세요.
-
+ 
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
-- 추가 요청이 있으면 반드시 웹 검색으로 관련 작품을 찾으세요.
-- [최우선] persons 배열에 인물명이 있으면 반드시 "[인물명] 출연작 넷플릭스" 또는 "[인물명] 드라마 영화 OTT" 형태로 한국어로 웹 검색해서 실제 출연작을 찾고, 그 중 보유 OTT에서 서비스 중인 작품을 추천하세요. persons: ${JSON.stringify(persons || [])}
-- 인물명 언급 시 (예: 오은영, 유재석, 봉준호) → "[인물명] 출연 프로그램" 또는 "[인물명] 드라마 영화"로 웹 검색해서 실제 출연작을 찾으세요.
-- 장르/소재 언급 시 (예: 로봇, 추리물) → 반드시 영어로 "[소재 영어] movies [OTT명] Korea 2024" 형태로 검색하세요. (예: "robot movies Netflix Korea 2024", "mystery thriller Netflix Korea")
-- "~같은 분위기", "~처럼", "~같은 거" → 해당 작품과 유사한 작품을 웹 검색으로 찾으세요.
+- "~같은 분위기", "~처럼", "~같은 거" → 반드시 후보 목록의 description을 하나씩 읽고, 해당 작품과 분위기·스토리·테마가 가장 유사한 작품을 선별하세요. 장르 태그만 보지 말고 description을 적극 활용하세요.
 - 이미 본 작품 언급 → 해당 작품과 비슷하지만 다른 작품 추천
 - 감정/기분 표현 → 그 감정에 맞는 작품 추천
 - 현재 상황 설명 → 상황에 어울리는 작품 추천
 - 피하고 싶은 것 언급 → 해당 요소 배제
-추가 요청은 장르·분위기 칩 선택보다 우선순위가 높습니다. 반드시 추가 요청 키워드에 맞는 작품을 찾아 추천하세요.
-
+추가 요청은 장르·분위기 칩 선택과 동등하게 반영하세요. description이 있는 경우 반드시 읽고 분위기 유사도를 판단하세요.
+ 
 사용자 취향:
 - 보유 OTT: ${otts?.length ? otts.join(', ') : '상관없음'}
 - 원하는 장르: ${genres?.length ? genres.join(', ') : '상관없음'}
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
-- 콘텐츠 유형: ${contentType || '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}${ageInstruction}${personInstruction}
-
+- 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+ 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
   {
@@ -175,11 +135,12 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "type": "movie 또는 tv",
     "genre": "장르",
     "source": "tmdb",
-    "hook": "${HOOK_INSTRUCTION}",
-    "reason": "반드시 실제 등장인물 이름을 언급하면서, 왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지."
+    "hook": "작품의 핵심 장면·감정·상황을 구체적으로 담은 한 줄 추천사(20자 내외). 좋은 예: 죽은 줄 알았던 아버지가 적으로 돌아왔다, 첫사랑과 10년 만에 같은 회사에서 재회. 나쁜 예(금지): 다양한 갈등, 더욱 강력한 적들, 감동적인 이야기 - 이런 추상적 표현 절대 금지.",
+    "reason": "왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지.",
+    "poster_url": "TMDB 포스터 이미지 URL (https://image.tmdb.org/t/p/w500/... 형식). 웹 검색으로 TMDB에서 정확한 poster_path를 찾아서 완성된 URL로 반환. TMDB에 없으면 null."
   }
 ]`;
-
+ 
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -188,30 +149,24 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        tools: [{ type: 'web_search_preview' }],
+        model: 'gpt-4o-mini',
+        tools: hasCandidates ? [] : [{ type: 'web_search_preview' }],
         input: prompt,
         max_output_tokens: 3000,
-        temperature: 0.7,
       }),
     });
     if (!response.ok) {
       const err = await response.json();
-      console.error('openai error:', JSON.stringify(err));
       return res.status(response.status).json(err);
     }
     const data = await response.json();
-    const searchCalls = (data.output || []).filter(o => o.type === 'web_search_call');
-    console.log('web_search_calls:', searchCalls.length, JSON.stringify(searchCalls));
     const msg = (data.output || []).find(o => o.type === 'message');
     const text = msg?.content?.find(c => c.type === 'output_text')?.text || '';
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('JSON 파싱 실패');
-    const cleaned = jsonMatch[0].replace(/[\u0000-\u001F\u007F]/g, ' ');
-    const recs = JSON.parse(cleaned);
+    const recs = JSON.parse(jsonMatch[0]);
     return res.status(200).json(recs);
   } catch (err) {
-    console.error('recommend error:', JSON.stringify(err), err.stack);
-    return res.status(500).json({ error: err.message, stack: err.stack });
+    return res.status(500).json({ error: err.message });
   }
 }
