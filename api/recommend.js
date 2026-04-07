@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 - reason에 URL이나 링크를 포함하지 마세요.${ottRatioDesc}
 
 [후보 작품 목록]
-${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_en || ''}", genre: "${c.genre || ''}", source: "${c.source}"${c.content ? ', description: "' + c.content.slice(0, 100).replace(/"/g, "'") + '..."' : ''}`).join('\n')}
+${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_en || ''}", genre: "${c.genre || ''}", source: "${c.source}", poster_path: "${c.poster_path || ''}"${c.content ? ', description: "' + c.content.slice(0, 100).replace(/"/g, "'") + '..."' : ''}`).join('\n')}
 
 [사용자 자유 입력 처리 - 최우선 반영]
 사용자가 추가 요청에 자유롭게 텍스트를 입력했을 경우, 이를 최우선으로 분석해서 추천에 반영하세요.
@@ -74,7 +74,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
@@ -87,7 +87,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
     "source": "후보 목록의 source 그대로 (laftel 또는 tmdb)",
     "hook": "작품의 핵심 장면·감정·상황을 구체적으로 담은 한 줄 추천사(20자 내외). 좋은 예: 죽은 줄 알았던 아버지가 적으로 돌아왔다, 첫사랑과 10년 만에 같은 회사에서 재회. 나쁜 예(금지): 다양한 갈등, 더욱 강력한 적들, 감동적인 이야기 - 이런 추상적 표현 절대 금지.",
     "reason": "왜 지금 이 사용자 상황에 딱인지 2~3문장. URL 포함 금지.",
-    "poster_url": "TMDB 포스터 이미지 URL (https://image.tmdb.org/t/p/w500/... 형식). 웹 검색으로 TMDB에서 정확한 poster_path를 찾아서 완성된 URL로 반환. TMDB에 없으면 null."
+    "poster_path": "후보 목록의 poster_path 값을 그대로 사용. 없으면 빈 문자열."
   }
 ]`
     : `당신은 한국 OTT 콘텐츠 전문 큐레이터입니다.
@@ -124,7 +124,7 @@ ${candidates.map((c, i) => `${i + 1}. title: "${c.title}", title_en: "${c.title_
 - 오늘 분위기: ${moods?.length ? moods.join(', ') : '상관없음'}
 - 누구랑: ${contexts?.length ? contexts.join(', ') : '상관없음'}
 - 시청 시간: ${times?.length ? times.join(', ') : '상관없음'}
-- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}
+- 추가 요청: ${extra || '없음'}${mbtiDesc}${animeInstruction}${contentTypeInstruction}
 
 응답 형식 (JSON만, 다른 텍스트 없이):
 [
