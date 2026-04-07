@@ -22,8 +22,10 @@ export default async function handler(req, res) {
     ? '\nMBTI 유형: ' + mbti.map(m => MBTI_DESC[m] || m).join(', ')
     : '';
 
+  const { contentType } = req.body;
   const hasCandidates = candidates && candidates.length > 0;
   const animeInstruction = isAnimeMode ? "\n[중요] 사용자가 애니메이션을 원합니다. 반드시 5개 모두 애니메이션 작품으로 추천하세요." : "";
+  const contentTypeInstruction = contentType === '시리즈' ? "\n[중요] 사용자가 TV 시리즈를 원합니다. 반드시 5개 모두 TV 시리즈만 추천하고 type은 반드시 \"tv\"로 설정하세요." : contentType === '영화' ? "\n[중요] 사용자가 영화를 원합니다. 반드시 5개 모두 영화만 추천하고 type은 반드시 \"movie\"로 설정하세요." : "";
 
   // OTT별 후보 수 계산 및 목표 비율 생성
   let ottRatioDesc = '';
